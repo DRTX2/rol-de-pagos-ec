@@ -7,7 +7,11 @@
   const iniciales = (n) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase();
   const hue = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
   const avatar = (e) => `<span class="av" style="--h:${hue(e.nombre)}">${esc(iniciales(e.nombre))}</span>`;
-  const MODOS = [['mensualiza', 'Se paga cada mes'], ['acumula', 'Se acumula y paga en su fecha'], ['no', 'No aplica']];
+  const MODOS = {
+    d13: [['mensualiza', 'Se paga cada mes en el rol'], ['acumula', 'Se acumula y se paga hasta el 24 de diciembre'], ['no', 'No aplica']],
+    d14: [['mensualiza', 'Se paga cada mes en el rol'], ['acumula', 'Se acumula y se paga en su fecha (según región)'], ['no', 'No aplica']],
+    fr: [['mensualiza', 'Se paga cada mes en el rol'], ['acumula', 'Se deposita en el IESS (a pedido del trabajador)'], ['no', 'No aplica']],
+  };
   const modoTag = (m) => ({ mensualiza: '<span class="tag">Mensual</span>', acumula: '<span class="tag warn">Acumula</span>', no: '<span class="tag mute">No aplica</span>' }[m || 'mensualiza']);
 
   /* ---------- Documentos imprimibles ---------- */
@@ -73,7 +77,7 @@
     const max = Math.max(1, ...act.map(([, c]) => c.neto));
     const seg = [['Neto a empleados', T.neto, 'var(--c-neto)'], ['Descuentos al trabajador', T.egresos, 'var(--c-desc)'], ['IESS patronal, SECAP e IECE', T.patronal || 0, 'var(--c-pat)'], ['Provisiones (13º, 14º, vacaciones)', T.prov, 'var(--c-prov)']];
     const year = p.slice(0, 4), meses = [];
-    for (let m = 1; m <= 12; m++) { const pp = `${year}-${String(m).padStart(2, '0')}`; if (S.periodos[pp]) { const t = App.totalesPeriodo(pp); meses.push({ label: App.MESES[m - 1].slice(0, 3), vals: { neto: t.neto, desc: t.egresos, pat: t.patronal || 0, prov: t.prov } }); } }
+    for (let m = 1; m <= 12; m++) { const pp = `${year}-${String(m).padStart(2, '0')}`; if (pp > p) break; const t = App.totalesPeriodo(pp); if (t.n) meses.push({ label: App.MESES[m - 1].slice(0, 3), vals: { neto: t.neto, desc: t.egresos, pat: t.patronal || 0, prov: t.prov } }); }
     const alerts = [];
     S.empleados.forEach((e) => { if (e.cedula && !EC.cedulaValida(e.cedula)) alerts.push(`${e.nombre}: cédula con dígito verificador inválido.`); if (+e.salario < S.cfg.sbu) alerts.push(`${e.nombre}: salario menor al SBU.`); });
     if (!EC.validarRUC(S.empresa.ruc).valido) alerts.push('RUC de la empresa vacío o inválido (Ajustes).');
@@ -147,11 +151,14 @@
   function drawPanel(host, lista) {
     const S = App.S, e = S.empleados.find((x) => x.id === S.selEmp), nv = App.novedades(e.id);
     const ctl = $('#ctl', host), slip = $('#slip', host);
-    const val = (k) => (nv[k] === undefined || nv[k] === '' ? (k === 'dias' ? S.cfg.diasMes : 0) : +nv[k]);
+    const base = (k) => (k === 'dias' ? EC.diasDefault(e, S.periodo, S.cfg) : 0);
+    const val = (k) => (nv[k] === undefined || nv[k] === '' ? base(k) : +nv[k]);
     ctl.innerHTML = `<div class="who-h">${avatar(e)}<div><h2>${esc(e.nombre)}</h2><p class="sub">${esc(e.cargo)} · ${esc(S.cfg.regimenes[e.regimen]?.nombre.split(' (')[0])} · salario ${money(+e.salario)}</p></div><button class="btn sm" id="vr">${icon('print')}Rol individual</button></div>
-      <div class="sliders">${CAMPOS.map(([k, l, mn, mx, st]) => { const off = e.horasExtras === false && k !== 'dias'; return `<label class="sl ${off ? 'off' : ''}"><span>${l}<output data-o="${k}">${val(k)}</output></span><input type="range" data-k="${k}" min="${mn}" max="${mx}" step="${st}" value="${val(k)}" ${off ? 'disabled' : ''}></label>`; }).join('')}</div>
-      <div class="money">${MONEY.map(([k, l]) => `<label>${l}<span class="cur"><i>$</i><input data-k="${k}" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${esc(nv[k] ?? '')}"></span></label>`).join('')}</div>
-      ${e.horasExtras === false ? '<p class="hint">Este empleado no tiene horas extras habilitadas (cargo de dirección o confianza). Cámbialo en su ficha.</p>' : ''}`;
+      <div class="sliders">${CAMPOS.map(([k, l, mn, mx, st]) => { const off = e.horasExtras === false && k !== 'dias', x = val(k);
+        return `<div class="sl ${off ? 'off' : ''}"><span>${l}</span><div class="slr"><input type="range" data-k="${k}" min="${mn}" max="${Math.max(mx, x)}" step="${st}" value="${x}" ${off ? 'disabled' : ''} aria-label="${l}"><input class="num" type="number" data-k="${k}" step="any" min="0" value="${x}" ${off ? 'disabled' : ''} aria-label="${l}"></div></div>`; }).join('')}</div>
+      <div class="money">${MONEY.map(([k, l]) => `<label>${l}<span class="cur"><i>$</i><input data-k="${k}" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" value="${esc(nv[k] ?? '')}"></span></label>`).join('')}</div>
+      ${e.horasExtras === false ? '<p class="hint">Este empleado no tiene horas extras habilitadas (cargo de dirección o confianza). <button class="lnk" id="enHE">Habilitar horas extras</button></p>' : ''}`;
+    const he = $('#enHE', ctl); if (he) he.onclick = () => { e.horasExtras = true; App.save(); drawPanel(host, lista); };
     slip.innerHTML = `<div class="slip2"><div class="cols-s"><div><h3>Ingresos</h3><ul id="li-ing">${LINEAS.filter((l) => l[0] === 'ing').map((l, i) => `<li class="ln" data-k="${l[1]}"><div><span class="lb"></span><b class="vl">$0.00</b></div></li>`).join('')}</ul><div class="tot"><span>Total ingresos</span><b id="t-ing">$0.00</b></div></div>
       <div><h3>Egresos</h3><ul id="li-egr">${LINEAS.filter((l) => l[0] === 'egr').map((l) => `<li class="ln" data-k="${l[1]}"><div><span class="lb"></span><b class="vl">$0.00</b></div></li>`).join('')}</ul><div class="tot"><span>Total egresos</span><b id="t-egr">$0.00</b></div></div></div>
       <div class="net2"><span>Neto a recibir</span><b id="t-neto">$0.00</b></div><div class="flow-bar" id="fb"></div><ul class="legend inline" id="fl"></ul>
@@ -174,8 +181,11 @@
     };
     ctl.addEventListener('input', (ev) => {
       const k = ev.target.dataset.k; if (!k) return;
-      if (ev.target.value === '') delete nv[k]; else nv[k] = ev.target.value;
-      if (ev.target.type === 'range') $(`output[data-o="${k}"]`, ctl).textContent = ev.target.value;
+      const v = ev.target.value;
+      if (v === '') delete nv[k]; else nv[k] = v;
+      if (ev.target.type === 'range' || ev.target.classList.contains('num')) { // slider y número siempre sincronizados
+        $$(`input[data-k="${k}"]`, ctl).forEach((o) => { if (o === ev.target) return; if (o.type === 'range') o.max = Math.max(+o.max, +v || 0); o.value = v === '' ? base(k) : v; });
+      }
       App.save(); upd();
     });
     upd();
@@ -218,31 +228,43 @@
     const S = App.S;
     const n = e ? JSON.parse(JSON.stringify(e)) : { id: uid(), nombre: '', cedula: '', cargo: '', regimen: 'ct', salario: S.cfg.sbu, ingreso: '', region: 'sierra', d13: 'mensualiza', d14: 'mensualiza', fr: 'mensualiza', horasExtras: true, iess: true, rentaModo: 'auto', renta: 0, gastosPersonales: 0, cargas: 0 };
     const sel = (id, opts, val) => `<select id="${id}">${opts.map(([v, t]) => `<option value="${v}" ${v === val ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+    const help = (t) => `<small class="help">${t}</small>`;
     const d = App.modal(`<div class="row between"><h3>${e ? 'Editar' : 'Nuevo'} empleado</h3><button class="btn sm ghost" id="x" type="button">${icon('x')}Cerrar</button></div>
       <form id="f" method="dialog"><div class="docform"><div class="grid2">
       <label class="span2">Nombre completo<input id="nombre" required value="${esc(n.nombre)}"></label>
       <label>Cédula<input id="cedula" inputmode="numeric" maxlength="10" value="${esc(n.cedula)}"><small id="cm"></small></label><label>Cargo<input id="cargo" value="${esc(n.cargo)}"></label>
-      <label>Régimen laboral${sel('regimen', Object.entries(S.cfg.regimenes).map(([k, r]) => [k, r.nombre]), n.regimen)}</label><label>Región (define fecha del 14º)${sel('region', [['sierra', 'Sierra y Oriente'], ['costa', 'Costa y Galápagos']], n.region)}</label>
-      <label>Salario mensual (USD)<input id="salario" type="number" min="0" step="0.01" required value="${n.salario}"></label><label>Fecha de ingreso<input id="ingreso" type="date" required value="${esc(n.ingreso)}"></label>
-      <label>Décimo tercero${sel('d13', MODOS, n.d13)}</label><label>Décimo cuarto${sel('d14', MODOS, n.d14)}</label><label>Fondos de reserva (desde el 2.º año)${sel('fr', MODOS, n.fr)}</label>
-      <label>Cargas familiares<input id="cargas" type="number" min="0" step="1" value="${n.cargas || 0}"></label>
-      <label>Gastos personales proyectados al año<input id="gastos" type="number" min="0" step="1" value="${n.gastosPersonales || 0}"></label>
-      <label>Retención de renta${sel('rm', [['auto', 'Calcular con la tabla del SRI'], ['manual', 'Ingresar valor manual']], n.rentaModo || 'auto')}</label>
-      <label id="rl" ${n.rentaModo === 'manual' ? '' : 'hidden'}>Retención mensual (USD)<input id="renta" type="number" min="0" step="0.01" value="${n.renta || 0}"></label>
+      <label>Régimen laboral${sel('regimen', Object.entries(S.cfg.regimenes).map(([k, r]) => [k, r.nombre]), n.regimen)}${help('Código del Trabajo: empresa privada. LOSEP: sector público. Define los recargos de horas extras.')}</label>
+      <label>Región${sel('region', [['sierra', 'Sierra y Oriente'], ['costa', 'Costa y Galápagos']], n.region)}${help('Fija la fecha del décimo cuarto: 15 de agosto (Sierra y Oriente) o 15 de marzo (Costa y Galápagos). Importa en el finiquito y los vencimientos.')}</label>
+      <label>Salario mensual (USD)<input id="salario" type="number" min="0" step="any" required value="${n.salario}">${help(`El SBU 2026 es ${money(S.cfg.sbu)}; un salario menor genera una alerta, pero igual se calcula.`)}</label>
+      <label>Fecha de ingreso<input id="ingreso" type="date" value="${esc(n.ingreso)}">${help('Define desde cuándo corresponden fondos de reserva (12 meses cumplidos) y prorratea los días del primer mes.')}</label>
+      <label>Décimo tercero${sel('d13', MODOS.d13, n.d13)}${help('Un doceavo de lo ganado. «Cada mes» lo suma al rol; «Se acumula» lo provisiona para pagarlo en diciembre.')}</label>
+      <label>Décimo cuarto${sel('d14', MODOS.d14, n.d14)}${help('Un SBU al año, proporcional a los días trabajados.')}</label>
+      <label>Fondos de reserva${sel('fr', MODOS.fr, n.fr)}${help('8,33% del sueldo desde el segundo año. Antes de cumplir 12 meses no se calcula aunque elijas «Cada mes».')}</label>
+      <label>Cargas familiares<input id="cargas" type="number" min="0" step="any" value="${n.cargas || 0}">${help('Hijos o dependientes. Solo cambia el reparto de utilidades (5% por cargas); no afecta el rol mensual.')}</label>
+      <label>Gastos personales proyectados al año (USD)<input id="gastos" type="number" min="0" step="any" value="${n.gastosPersonales || 0}">${help('Vivienda, educación, salud, alimentación y vestimenta. Dan una rebaja del 20% sobre el impuesto; si el sueldo no supera la fracción básica, la retención ya es $0.')}</label>
+      <label>Retención de renta${sel('rm', [['auto', 'Calcular con la tabla del SRI'], ['manual', 'Ingresar valor manual']], n.rentaModo || 'auto')}${help('Automático proyecta el año con la tabla vigente. Manual sirve si tu contador ya fijó el valor.')}</label>
+      <label id="rl" ${n.rentaModo === 'manual' ? '' : 'hidden'}>Retención mensual (USD)<input id="renta" type="number" min="0" step="any" value="${n.renta || 0}"></label>
       <label class="check"><input id="he" type="checkbox" ${n.horasExtras !== false ? 'checked' : ''}> Recibe horas extras</label><label class="check"><input id="iess" type="checkbox" ${n.iess !== false ? 'checked' : ''}> Afiliado al IESS</label></div>
       <aside class="sumbox" id="pv"></aside></div>
       <div class="row end" style="margin-top:16px"><button class="btn" value="cancel" formnovalidate>Cancelar</button><button class="btn primary" value="ok">Guardar</button></div></form>`, { wide: true });
     $('#x', d).onclick = App.closeModal;
     const ced = $('#cedula', d);
-    const read = () => Object.assign(n, { nombre: $('#nombre', d).value.trim(), cedula: ced.value.trim(), cargo: $('#cargo', d).value.trim(), regimen: $('#regimen', d).value, region: $('#region', d).value, salario: +$('#salario', d).value, ingreso: $('#ingreso', d).value,
+    const read = () => Object.assign(n, { nombre: $('#nombre', d).value.trim(), cedula: ced.value.trim(), cargo: $('#cargo', d).value.trim(), regimen: $('#regimen', d).value, region: $('#region', d).value, salario: +$('#salario', d).value || 0, ingreso: $('#ingreso', d).value,
       d13: $('#d13', d).value, d14: $('#d14', d).value, fr: $('#fr', d).value, cargas: +$('#cargas', d).value || 0, gastosPersonales: +$('#gastos', d).value || 0, rentaModo: $('#rm', d).value, renta: +$('#renta', d).value || 0, horasExtras: $('#he', d).checked, iess: $('#iess', d).checked });
     const prev = () => {
       read(); $('#rl', d).hidden = n.rentaModo !== 'manual';
-      $('#cm', d).innerHTML = !n.cedula ? '' : EC.cedulaValida(n.cedula) ? '<span class="good">Cédula válida</span>' : '<span class="bad">Dígito verificador inválido</span>';
+      $('#cm', d).innerHTML = !n.cedula ? '' : EC.cedulaValida(n.cedula) ? '<span class="good">Cédula válida</span>' : '<span class="bad">Dígito verificador inválido (se puede guardar igual)</span>';
       const c = EC.calcular(n, {}, S.cfg, S.periodo);
-      $('#pv', d).innerHTML = `<h4>Vista previa mensual</h4><p class="sub">Sin horas extras ni novedades</p><dl><dt>Ingresos</dt><dd>${money(c.totalIngresos)}</dd><dt>IESS personal</dt><dd>${money(c.iessEmp)}</dd><dt>Retención de renta</dt><dd>${money(c.renta)}</dd><dt class="big">Neto</dt><dd class="big">${money(c.neto)}</dd><dt>Costo para la empresa</dt><dd>${money(c.costoEmpleador)}</dd></dl>${c.salario < S.cfg.sbu ? '' : ''}${c.avisos.length ? `<ul class="errs">${c.avisos.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}`;
+      $('#pv', d).innerHTML = `<h4>Vista previa mensual</h4><p class="sub">${App.periodoLabel(S.periodo)}, sin horas extras ni novedades</p><dl><dt>Ingresos</dt><dd>${money(c.totalIngresos)}</dd><dt>IESS personal</dt><dd>${money(c.iessEmp)}</dd><dt>Retención de renta</dt><dd>${money(c.renta)}</dd><dt class="big">Neto</dt><dd class="big">${money(c.neto)}</dd><dt>Costo para la empresa</dt><dd>${money(c.costoEmpleador)}</dd></dl>${c.avisos.length ? `<ul class="errs">${c.avisos.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}`;
     };
     $('#f', d).addEventListener('input', prev); $('#f', d).addEventListener('change', prev); prev();
-    $('#f', d).onsubmit = (ev) => { if (ev.submitter && ev.submitter.value === 'cancel') return; read(); if (e) Object.assign(e, n); else S.empleados.push(n); S.selEmp = n.id; App.save(); App.render(); App.toast('Empleado guardado'); };
+    $('#f', d).onsubmit = (ev) => {
+      if (ev.submitter && ev.submitter.value === 'cancel') return;
+      read(); if (e) Object.assign(e, n); else S.empleados.push(n);
+      S.selEmp = n.id;
+      let msg = 'Empleado guardado';
+      if (n.ingreso && n.ingreso.slice(0, 7) > S.periodo) { S.periodo = n.ingreso.slice(0, 7); msg += ` · periodo cambiado a ${App.periodoLabel(S.periodo)} (su mes de ingreso)`; }
+      App.save(); App.render(); App.toast(msg);
+    };
   }
 })();

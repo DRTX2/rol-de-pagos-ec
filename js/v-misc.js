@@ -123,7 +123,7 @@
     chk();
   }
   function params(h) {
-    const c = App.S.cfg, f = (k, l, st = '0.01') => `<label>${l}<input type="number" step="${st}" data-cfg="${k}" value="${c[k]}"></label>`;
+    const c = App.S.cfg, f = (k, l, st = 'any') => `<label>${l}<input type="number" step="${st}" data-cfg="${k}" value="${c[k]}"></label>`;
     h.innerHTML = `<div class="note">Valores 2026: SBU $482 (Consejo Nacional de Trabajo y Salarios), IESS 9,45% personal y 11,15% patronal, tabla de renta según la resolución NAC-DGERCGC25-00000043. Verifica antes de aplicarlos en una empresa real.</div>
       <div class="cols"><section class="card"><h2>Generales</h2><div class="grid2">${f('sbu', 'SBU (salario básico)')}${f('horasMes', 'Horas por mes', '1')}${f('diasMes', 'Días por mes', '1')}${f('iva', 'IVA (%)')}</div></section>
       <section class="card"><h2>Aportes y fondos (%)</h2><div class="grid2">${f('iessPersonal', 'IESS personal')}${f('iessPatronal', 'IESS patronal')}${f('secap', 'SECAP')}${f('iece', 'IECE')}${f('fondosReserva', 'Fondos de reserva')}${f('rebajaGastos', 'Rebaja por gastos personales')}</div></section></div>

@@ -205,3 +205,8 @@ dialog h3 { font-size: 1.2rem; margin-bottom: 6px; } dialog p { color: var(--mut
 
 /* Detalle de líneas en comprobantes */
 .items td.l input { width: 100%; } .items select[data-k=iva] { min-width: 74px; } .items td input { width: 84px; }
+
+/* Ayudas de campo y controles numéricos sincronizados */
+.help { color: var(--muted); font-size: .78rem; font-weight: 400; line-height: 1.35; }
+.slr { display: grid; grid-template-columns: 1fr 84px; gap: 12px; align-items: center; } .sl > span { display: block; color: var(--ink); margin-bottom: 2px; }
+.lnk.dark { color: var(--ink); }

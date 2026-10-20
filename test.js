@@ -93,3 +93,32 @@ console.log('OK');
   assert.deepStrictEqual(t, { subIva: 20, sub0: 4, subtotal: 24, descuento: 1, iva: 3, total: 27 });
 }
 console.log('OK v2');
+
+// ---- v3: ejemplo de la guía, días por defecto, decimales
+{
+  const emp = { regimen: 'ct', salario: 800, ingreso: '2024-01-15', d13: 'mensualiza', d14: 'mensualiza', fr: 'mensualiza' };
+  const r = EC.calcular(emp, { dias: 30, hSup: 10, hExt: 4, bonos: 50, otrosIng: 20, anticipo: 100, prestamos: 30, otrosDesc: 5 }, cfg, '2026-10');
+  assert.strictEqual(r.pagoSup, 50);
+  assert.strictEqual(r.pagoExt, 26.67);
+  assert.strictEqual(r.aportable, 926.67);
+  assert.strictEqual(r.d13Pago, 77.22);
+  assert.strictEqual(r.d14Pago, 40.17);
+  assert.strictEqual(r.frPago, 77.19);
+  assert.strictEqual(r.totalIngresos, 1141.25);
+  assert.strictEqual(r.iessEmp, 87.57);
+  assert.strictEqual(r.neto, 918.68);
+  assert.strictEqual(r.costoEmpleador, 1292.44);
+  // primer mes prorrateado: ingreso el 16 → 15 días
+  assert.strictEqual(EC.diasDefault({ ingreso: '2026-10-16' }, '2026-10', cfg), 15);
+  assert.strictEqual(EC.diasDefault({ ingreso: '2026-10-01' }, '2026-10', cfg), 30);
+  assert.strictEqual(EC.diasDefault({ ingreso: '2026-10-31' }, '2026-10', cfg), 1);
+  assert.strictEqual(EC.diasDefault({ ingreso: '2025-01-05' }, '2026-10', cfg), 30);
+  assert.strictEqual(EC.calcular({ regimen: 'ct', salario: 600, ingreso: '2026-10-16' }, {}, cfg, '2026-10').sueldo, 300);
+  // valores decimales y texto numérico
+  r2 = EC.calcular({ regimen: 'ct', salario: 1234.567, ingreso: '2024-01-15' }, { hSup: '2.5', bonos: '10.555' }, cfg, '2026-10');
+  assert.ok(Number.isFinite(r2.neto) && r2.neto > 0);
+  // valores basura no rompen el cálculo
+  r2 = EC.calcular({ regimen: 'ct', salario: '', ingreso: '' }, { hSup: 'abc', dias: '' }, cfg, '2026-10');
+  assert.strictEqual(r2.neto, 0);
+}
+console.log('OK v3');

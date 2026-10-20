@@ -48,6 +48,16 @@
     return Math.max(0, (fin.getFullYear() - ini.getFullYear()) * 12 + (fin.getMonth() - ini.getMonth()));
   }
 
+  /** Días a pagar por defecto: mes completo, o prorrateado si el empleado ingresó ese mes (año comercial de 30 días). */
+  function diasDefault(emp, periodo, cfg) {
+    cfg = cfg || DEFAULTS;
+    if (emp.ingreso && emp.ingreso.slice(0, 7) === periodo) {
+      const d = Math.min(30, +emp.ingreso.slice(8, 10) || 1);
+      return Math.max(0, Math.min(cfg.diasMes, cfg.diasMes - (d - 1)));
+    }
+    return cfg.diasMes;
+  }
+
   /** Impuesto anual según tabla progresiva. */
   function impuestoAnual(base, cfg) {
     const t = (cfg.irTabla || DEFAULTS.irTabla).find((x) => base >= x.desde && (x.hasta === null || base <= x.hasta));
@@ -73,7 +83,7 @@
     const avisos = [];
 
     const salario = num(emp.salario);
-    const dias = Math.min(cfg.diasMes, Math.max(0, per.dias === undefined || per.dias === '' ? cfg.diasMes : num(per.dias)));
+    const dias = Math.min(cfg.diasMes, Math.max(0, per.dias === undefined || per.dias === '' ? diasDefault(emp, periodo, cfg) : num(per.dias)));
     const valorHora = salario / cfg.horasMes;
 
     const sueldo = r2((salario / cfg.diasMes) * dias);
@@ -92,7 +102,7 @@
 
     const antig = mesesAntiguedad(emp.ingreso, periodo);
     const d13Base = r2(aportable / 12);
-    const d14Base = r2(((cfg.sbu / 12) * dias) / cfg.diasMes);
+    const d14Base = salario > 0 ? r2(((cfg.sbu / 12) * dias) / cfg.diasMes) : 0;
     const frAplica = antig >= 12;
     const frBase = frAplica ? r2((aportable * cfg.fondosReserva) / 100) : 0;
 
@@ -289,7 +299,7 @@
   }
 
   const api = {
-    DEFAULTS, calcular, r2, mesesAntiguedad, impuestoAnual, retencionMensual, finiquito, utilidades, CAUSAS, d360,
+    DEFAULTS, calcular, diasDefault, r2, mesesAntiguedad, impuestoAnual, retencionMensual, finiquito, utilidades, CAUSAS, d360,
     cedulaValida, validarRUC, claveAcceso, claveValida, totalesDoc, TIPO_DOC,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

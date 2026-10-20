@@ -33,9 +33,9 @@
       <label class="span2">Empleado<select id="emp">${S.empleados.map((e) => `<option value="${e.id}" ${e.id === S.liqEmp ? 'selected' : ''}>${esc(e.nombre)} · ingreso ${esc(e.ingreso)}</option>`).join('')}</select></label>
       <label>Fecha de salida<input type="date" id="salida" value="${st.salida}"></label>
       <label>Causa de terminación<select id="causa">${Object.entries(EC.CAUSAS).map(([k, t]) => `<option value="${k}" ${k === st.causa ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
-      <label>Días de vacaciones ya tomados<input type="number" id="vacTomadas" min="0" step="0.5" value="${st.vacTomadas}"></label><label>Días adicionales por antigüedad<input type="number" id="vacExtra" min="0" step="1" value="${st.vacExtra}"></label>
-      <label>Utilidades pendientes (USD)<input type="number" id="utilidades" min="0" step="0.01" value="${st.utilidades}"></label><label>Fondos de reserva pendientes (USD)<input type="number" id="fondosPend" min="0" step="0.01" value="${st.fondosPend}"></label>
-      <label class="span2">Otros descuentos (USD)<input type="number" id="descuentos" min="0" step="0.01" value="${st.descuentos}"></label></div>
+      <label>Días de vacaciones ya tomados<input type="number" id="vacTomadas" min="0" step="any" value="${st.vacTomadas}"></label><label>Días adicionales por antigüedad<input type="number" id="vacExtra" min="0" step="any" value="${st.vacExtra}"></label>
+      <label>Utilidades pendientes (USD)<input type="number" id="utilidades" min="0" step="any" value="${st.utilidades}"></label><label>Fondos de reserva pendientes (USD)<input type="number" id="fondosPend" min="0" step="any" value="${st.fondosPend}"></label>
+      <label class="span2">Otros descuentos (USD)<input type="number" id="descuentos" min="0" step="any" value="${st.descuentos}"></label></div>
       <div class="row end" style="margin-top:14px"><button class="btn primary" id="guardar">Guardar liquidación</button></div></section>
       <section class="card sticky" id="res"></section></div>
       <section class="card"><h2>Liquidaciones guardadas</h2>${S.finiquitos.length ? `<div class="tablewrap flat"><table class="list"><thead><tr><th class="l">Empleado</th><th class="l">Salida</th><th class="l">Causa</th><th>Valor a pagar</th><th></th></tr></thead><tbody>${S.finiquitos.map((f) => `<tr data-id="${f.id}"><td class="l"><b>${esc(f.emp.nombre)}</b></td><td class="l">${esc(f.opt.salida)}</td><td class="l">${esc(f.res.causa)}</td><td>${money(f.res.neto)}</td><td class="acts"><button class="btn sm" data-a="print">${icon('print')}Acta</button><button class="btn sm ghost danger" data-a="del" aria-label="Eliminar">${icon('trash')}</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty"><b>Sin liquidaciones guardadas</b><p>Calcula una y guárdala para imprimir el acta.</p></div>'}</section>`;
@@ -68,7 +68,7 @@
       return { id: e.id, dias, cargas: +e.cargas || 0 };
     });
     host.innerHTML = `<div class="cols2 start"><section class="card"><h2>Utilidad del ejercicio</h2><p class="sub">El 15% de la utilidad líquida se reparte: 10% por días trabajados y 5% por cargas familiares.</p><div class="grid2">
-      <label>Ejercicio fiscal<input type="number" id="anio" value="${u.anio}" step="1"></label><label>Utilidad líquida (USD)<span class="cur"><i>$</i><input type="number" id="val" min="0" step="0.01" value="${u.valor}"></span></label></div>
+      <label>Ejercicio fiscal<input type="number" id="anio" value="${u.anio}" step="any"></label><label>Utilidad líquida (USD)<span class="cur"><i>$</i><input type="number" id="val" min="0" step="any" value="${u.valor}"></span></label></div>
       <div class="split big" id="sp"></div><ul class="legend inline" id="lg"></ul></section><section class="card sticky"><h2>Resumen</h2><dl class="rows" id="rs"></dl><p class="hint">Las cargas familiares y los días se toman de la ficha de cada empleado. La ley fija topes por salario digno; confirma con tu contador.</p></section></div>
       <section class="card"><h2>Reparto por empleado</h2><div class="tablewrap flat"><table class="list" id="tt"></table></div></section>`;
     const draw = () => {

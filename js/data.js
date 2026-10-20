@@ -36,8 +36,6 @@
           if (e.id === 'e5' && m % 2) n.hNoc = String(6);
         }
         if (e.id === 'e6') n.bonos = String(110 + ((m * 53) % 170));
-        if (e.id === 'e4' && m === 12) n.bonos = '0';
-        if (e.id === 'e7' && p === '2026-04') n.dias = '21';
         if (e.id === 'e7' && m % 3 === 0) n.anticipo = '80';
         if (e.id === 'e8' && m % 2 === 0) n.otrosIng = '25';
         if (e.id === 'e3' && m === 10) n.prestamos = '64.30';

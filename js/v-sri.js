@@ -173,7 +173,7 @@
     };
     const itemsHTML = () => `<h4>${tipo === 'guia' ? 'Bienes a trasladar' : 'Detalle'}</h4><div class="tablewrap flat"><table class="items"><thead><tr><th class="l">Producto</th><th>Cant.</th>${tipo === 'guia' ? '' : '<th>Precio</th><th>Desc. $</th><th>IVA</th>'}<th></th></tr></thead><tbody>
       ${draft.items.map((it, i) => `<tr data-i="${i}"><td class="l"><select data-k="prod"><option value="">${esc(it.desc) || 'Elige o escribe abajo…'}</option>${S.productos.map((p) => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('')}</select><input data-k="desc" value="${esc(it.desc)}" placeholder="Descripción"></td>
-        <td><input data-k="cant" type="number" min="0" step="any" value="${it.cant}"></td>${tipo === 'guia' ? '' : `<td><input data-k="precio" type="number" min="0" step="0.01" value="${it.precio}"></td><td><input data-k="descuento" type="number" min="0" step="0.01" value="${it.descuento}"></td>
+        <td><input data-k="cant" type="number" min="0" step="any" value="${it.cant}"></td>${tipo === 'guia' ? '' : `<td><input data-k="precio" type="number" min="0" step="any" value="${it.precio}"></td><td><input data-k="descuento" type="number" min="0" step="any" value="${it.descuento}"></td>
         <td><select data-k="iva"><option value="0" ${+it.iva === 0 ? 'selected' : ''}>0%</option><option value="${S.cfg.iva}" ${+it.iva !== 0 ? 'selected' : ''}>${S.cfg.iva}%</option></select></td>`}
         <td><button class="btn sm ghost danger" data-del aria-label="Quitar línea">${icon('x')}</button></td></tr>`).join('')}</tbody></table></div>
       <div class="row"><button class="btn sm" id="addI">${icon('plus')}Agregar línea</button>${needRef || tipo === 'guia' ? '<button class="btn sm ghost" id="cpy">Copiar ítems de la factura</button>' : ''}</div>`;
@@ -182,7 +182,7 @@
       <div class="tablewrap flat"><table class="items"><thead><tr><th class="l">Impuesto y código</th><th>Base imponible</th><th>%</th><th>Valor</th><th></th></tr></thead><tbody>
       ${draft.lineas.map((l, i) => `<tr data-i="${i}"><td class="l"><select data-k="imp"><option value="renta" ${l.impuesto === 'renta' ? 'selected' : ''}>Renta</option><option value="iva" ${l.impuesto === 'iva' ? 'selected' : ''}>IVA</option></select>
         <select data-k="cod">${RETENCIONES[l.impuesto].map(([c, n, p]) => `<option value="${c}" ${c === l.codigo ? 'selected' : ''}>${c} · ${esc(n)} (${p}%)</option>`).join('')}</select></td>
-        <td><input data-k="base" type="number" min="0" step="0.01" value="${l.base}"></td><td><input data-k="pct" type="number" min="0" step="0.01" value="${l.pct}"></td><td class="v">${money(EC.r2((l.base * l.pct) / 100))}</td><td><button class="btn sm ghost danger" data-del aria-label="Quitar">${icon('x')}</button></td></tr>`).join('')}</tbody></table></div>
+        <td><input data-k="base" type="number" min="0" step="any" value="${l.base}"></td><td><input data-k="pct" type="number" min="0" step="any" value="${l.pct}"></td><td class="v">${money(EC.r2((l.base * l.pct) / 100))}</td><td><button class="btn sm ghost danger" data-del aria-label="Quitar">${icon('x')}</button></td></tr>`).join('')}</tbody></table></div>
       <div class="row"><button class="btn sm" id="addR">${icon('plus')}Agregar retención</button></div><p class="hint">Códigos y porcentajes referenciales: verifica la tabla vigente del SRI. El porcentaje es editable.</p>`;
 
     const errores = () => {
@@ -282,7 +282,7 @@
   }
   function formProducto(p) {
     const n = p || { id: uid(), codigo: '', nombre: '', precio: 0, iva: App.S.cfg.iva };
-    const d = App.modal(`<h3>${p ? 'Editar' : 'Nuevo'} producto</h3><form class="grid2" method="dialog"><label>Código<input id="c" required value="${esc(n.codigo)}"></label><label>Precio unitario (sin IVA)<input id="p" type="number" step="0.01" min="0" required value="${n.precio}"></label>
+    const d = App.modal(`<h3>${p ? 'Editar' : 'Nuevo'} producto</h3><form class="grid2" method="dialog"><label>Código<input id="c" required value="${esc(n.codigo)}"></label><label>Precio unitario (sin IVA)<input id="p" type="number" step="any" min="0" required value="${n.precio}"></label>
       <label class="span2">Nombre<input id="n" required value="${esc(n.nombre)}"></label><label>IVA<select id="v"><option value="0" ${+n.iva === 0 ? 'selected' : ''}>0%</option><option value="${App.S.cfg.iva}" ${+n.iva !== 0 ? 'selected' : ''}>${App.S.cfg.iva}%</option></select></label>
       <div class="row end span2"><button class="btn" value="cancel" formnovalidate>Cancelar</button><button class="btn primary" value="ok">Guardar</button></div></form>`);
     $('form', d).onsubmit = (ev) => { if (ev.submitter && ev.submitter.value === 'cancel') return; Object.assign(n, { codigo: $('#c', d).value.trim(), nombre: $('#n', d).value.trim(), precio: +$('#p', d).value, iva: +$('#v', d).value }); if (!p) App.S.productos.push(n); App.save(); App.render(); App.toast('Producto guardado'); };
