@@ -170,16 +170,16 @@ Si el sueldo anual proyectado no supera la fracción básica, la retención es $
 |---|---|---|
 | Total ingresos pagados | del rol | $1,141.25 |
 | Aporte patronal IESS | base aportable × 11,15% | $103.32 |
-| SECAP + IECE | base aportable × 1% (0,5% + 0,5%, cada uno redondeado) | $9.26 |
+| Aporte personal IESS (informativo) | base aportable × 9,45%; se descuenta al empleado y ya está dentro de los ingresos, no suma al costo | $87.57 |
 | Provisión décimo tercero (si se acumula) | base aportable ÷ 12 | — |
 | Provisión décimo cuarto (si se acumula) | SBU ÷ 12 × días/30 | — |
 | Provisión fondos de reserva (si se acumula) | base aportable × 8,33% | — |
 | Provisión de vacaciones | base aportable ÷ 24 | $38.61 |
-| **Costo total** | suma | **$1,292.44** |
+| **Costo total** | suma | **$1,283.18** |
 
 La provisión de vacaciones equivale a 15 días por año (15/360 = 1/24 del sueldo).
 
-La **planilla IESS** del mes es: aporte personal (retenido al trabajador) + patronal + SECAP + IECE.
+La **planilla IESS** del mes es: aporte personal (retenido al trabajador) + patronal. SECAP e IECE están en 0 por defecto y se pueden reactivar en Ajustes.
 
 ## 8. Liquidación (finiquito)
 
@@ -242,7 +242,7 @@ Verificados en octubre de 2026 con prensa y firmas legales; no se consultó el S
 |---|---|---|
 | SBU 2026 | $482 | Confirmado (Consejo Nacional de Trabajo y Salarios, 15-dic-2025) |
 | Aporte personal / patronal IESS | 9,45% / 11,15% | Confirmado |
-| SECAP e IECE | 0,5% cada uno | Confirmado (12,15% patronal total) |
+| SECAP e IECE | 0% (desactivados) | Se pueden reactivar en Ajustes |
 | IVA | 15% | Confirmado (circular SRI NAC-DGECCGC25-00000006) |
 | Tabla de renta 2026 | ver sección 6 | Confirmado (NAC-DGERCGC25-00000043); fuentes de terceros |
 | Canasta básica, topes por cargas, rebaja del 18% | $821,80; 7 a 20 canastas | **Confirmar con tu contador**: las fuentes no coinciden del todo |
@@ -270,3 +270,11 @@ Todos son editables en Ajustes → Parámetros legales, con botón para restaura
 - La proyección de renta supone ingresos constantes durante el año; no recalcula con meses anteriores.
 - No incluye jornadas parciales, destajo ni trabajadores con sueldo variable por obra.
 - Cálculo referencial: confirma con un contador antes de pagar o declarar.
+
+## Jornada, niveles y salarios sectoriales (parametrizables en Ajustes)
+- **Jornada de trabajo:** cada empleado tiene una jornada (entrada, salida, almuerzo y días por semana). Horas diarias = salida − entrada − almuerzo; el valor de la hora es salario ÷ (horas diarias × días del mes), o sea 240 h con 8 h diarias. Los topes (8 h diarias, 40 semanales, 4 extra por día, 12 por semana) y el horario nocturno (19h00 a 06h00) se editan y generan alertas.
+- **Niveles ocupacionales:** A jefatura, B supervisión, C operación, D asistencia, E soporte (A1, B1 a B3, C1 a C3, D1 y D2, E1 y E2). Se pueden agregar o renombrar.
+- **Comisión sectorial:** solo la N.º 12, Tecnología: hardware y software, con su escala de salarios mínimos por nivel (Anexo CS 12 de los salarios mínimos sectoriales 2025, vigente en 2026): A1 $507.37, B1 $506.67, B2 $505.97, B3 $505.26, C1 $504.56, C2 $502.68, C3 $500.80, D1 $498.93, D2 $497.05, E2 $493.29 (E1 no tiene valor en la escala). Al elegir el cargo, la comisión y el nivel se fijan solos y la escala marca el salario mínimo. Si falta el nivel exacto se usa el menor valor de la comisión como piso, con alerta. Un salario menor al mínimo sectorial genera alerta. Se pueden agregar más comisiones en Ajustes.
+- **Remuneraciones:** cuadro mensual por empleado con régimen, jornada, aportes, décimos, fondos de reserva y RUM con y sin décimos, exportable a Excel.
+- **Cargos:** catálogo editable en Ajustes con los 7 cargos de Global Security, ordenados por jerarquía (cada cargo «reporta a» otro y se sangra bajo él) y con buscador. Cada cargo fija nivel, comisión y mínimo. Al crear un empleado se busca y elige el cargo (el selector muestra el organigrama con sangría y el nivel) y se llenan solos comisión, nivel y salario propuesto. Mínimos del Anexo 1 del MDT 2025, comisión 12 (vigente en 2026 según el oficio MDT-PRE-2026-002577). Todo mínimo por debajo del SBU se iguala al SBU.
+- **Excel de ejemplo (UBIKAR):** en Ajustes se puede cargar la hoja de referencia (gerente $2034 y administrador/contador $1212); la vista Remuneraciones reproduce sus cifras, incluidos los totales $3560.48 y $2939.25.

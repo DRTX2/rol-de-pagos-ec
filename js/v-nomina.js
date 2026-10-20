@@ -36,9 +36,9 @@
     const rd = c.rentaDet;
     return ({
       sueldo: `${sal} ÷ ${cfg.diasMes} × ${c.dias} días`,
-      pagoSup: `(${sal} ÷ ${cfg.horasMes} h) × ${1 + reg.suplementaria / 100} × ${c.hSup} h`,
-      pagoExt: `(${sal} ÷ ${cfg.horasMes} h) × ${1 + reg.extraordinaria / 100} × ${c.hExt} h`,
-      pagoNoc: `(${sal} ÷ ${cfg.horasMes} h) × ${reg.nocturno / 100} × ${c.hNoc} h`,
+      pagoSup: `(${sal} ÷ ${c.horasMes} h) × ${1 + reg.suplementaria / 100} × ${c.hSup} h`,
+      pagoExt: `(${sal} ÷ ${c.horasMes} h) × ${1 + reg.extraordinaria / 100} × ${c.hExt} h`,
+      pagoNoc: `(${sal} ÷ ${c.horasMes} h) × ${reg.nocturno / 100} × ${c.hNoc} h`,
       bonos: 'Valor ingresado · aporta al IESS, décimos y fondos',
       otrosIng: 'Valor ingresado · no aporta al IESS',
       d13Pago: `${m(c.aportable)} (sueldo + extras + bonos) ÷ 12`,
@@ -168,7 +168,7 @@
     const p = S.periodo, T = App.totalesPeriodo(p);
     const act = S.empleados.filter((e) => activo(e, p)).map((e) => [e, App.calc(e)]).sort((a, b) => b[1].neto - a[1].neto);
     const max = Math.max(1, ...act.map(([, c]) => c.neto));
-    const seg = [['Neto a empleados', T.neto, 'var(--c-neto)'], ['Descuentos al trabajador', T.egresos, 'var(--c-desc)'], ['IESS patronal, SECAP e IECE', T.patronal || 0, 'var(--c-pat)'], ['Provisiones (13º, 14º, vacaciones)', T.prov, 'var(--c-prov)']];
+    const seg = [['Neto a empleados', T.neto, 'var(--c-neto)'], ['Descuentos al trabajador', T.egresos, 'var(--c-desc)'], ['Aporte patronal IESS', T.patronal || 0, 'var(--c-pat)'], ['Provisiones (13º, 14º, vacaciones)', T.prov, 'var(--c-prov)']];
     const year = p.slice(0, 4), meses = [];
     for (let m = 1; m <= 12; m++) { const pp = `${year}-${String(m).padStart(2, '0')}`; if (pp > p) break; const t = App.totalesPeriodo(pp); if (t.n) meses.push({ label: App.MESES[m - 1].slice(0, 3), vals: { neto: t.neto, desc: t.egresos, pat: t.patronal || 0, prov: t.prov } }); }
     const alerts = [];
@@ -199,7 +199,7 @@
     ['dias', 'Días trabajados', 0, 30, 1, () => 'Días del mes que trabajó (máximo 30). Si ingresó este mes, se calcula solo desde su fecha de ingreso.'],
     ['hSup', 'Horas suplementarias', 0, 60, 1, (e) => `Horas extra hasta las 24h00 en días laborables. Se pagan con ${regTxt(e, 'suplementaria')}% de recargo.`],
     ['hExt', 'Horas extraordinarias', 0, 40, 1, (e) => `Madrugada (24h00 a 6h00), sábados, domingos y feriados. Se pagan con ${regTxt(e, 'extraordinaria')}% de recargo.`],
-    ['hNoc', 'Horas nocturnas', 0, 80, 1, (e) => `Horas de jornada normal entre 19h00 y 6h00: recargo de ${regTxt(e, 'nocturno')}% sobre el valor de la hora.`],
+    ['hNoc', 'Horas nocturnas', 0, 80, 1, (e) => `Horas de jornada normal entre ${App.S.cfg.nocturnoIni.replace(':', 'h')} y ${App.S.cfg.nocturnoFin.replace(':', 'h')}: recargo de ${regTxt(e, 'nocturno')}% sobre el valor de la hora.`],
   ];
   const MONEY = [
     ['bonos', 'Bonos o comisiones', 'Pagos habituales por resultados. Aportan al IESS y entran en el cálculo del décimo tercero y los fondos de reserva.'],
@@ -217,8 +217,8 @@
   const STATS = [
     ['neto', 'Total a pagar', 'Suma del neto de todos los empleados del mes: lo que se transfiere a los trabajadores.'],
     ['ingresos', 'Total ingresos', 'Todo lo devengado: sueldos, horas extras, bonos y décimos o fondos mensualizados. Antes de descuentos.'],
-    ['iess', 'Planilla IESS', 'Lo que se paga al IESS: aporte personal 9,45% (retenido al trabajador) + patronal 11,15% + SECAP 0,5% + IECE 0,5%.'],
-    ['costo', 'Costo empleador', 'Lo que realmente cuesta la nómina: ingresos + aporte patronal + SECAP/IECE + provisiones de décimos, fondos y vacaciones.'],
+    ['iess', 'Planilla IESS', 'Lo que se paga al IESS: aporte personal 9,45% (retenido al trabajador) + patronal 11,15%.'],
+    ['costo', 'Costo empleador', 'Lo que realmente cuesta la nómina: ingresos + aporte patronal + provisiones de décimos, fondos y vacaciones.'],
   ];
   App.views.rol = (v) => {
     const S = App.S, p = S.periodo;
@@ -314,7 +314,8 @@
     const cfg = App.S.cfg, r = (l, f, v, cls = '') => `<dt class="${cls}">${l}${f ? `<small>${f}</small>` : ''}</dt><dd class="${cls}">${money(v)}</dd>`;
     return r('Total ingresos pagados', 'lo que recibe el trabajador antes de descuentos', c.totalIngresos)
       + r(`Aporte patronal IESS ${cfg.iessPatronal}%`, `${money(c.aportable)} × ${cfg.iessPatronal}%`, c.patronal)
-      + r(`SECAP ${cfg.secap}% + IECE ${cfg.iece}%`, `${money(c.aportable)} × ${cfg.secap + cfg.iece}%`, EC.r2(c.secap + c.iece))
+      + r(`Aporte personal IESS ${cfg.iessPersonal}%`, `${money(c.aportable)} × ${cfg.iessPersonal}% · se descuenta al empleado, ya está en los ingresos`, c.iessEmp, 'info')
+      + (cfg.secap + cfg.iece ? r(`SECAP ${cfg.secap}% + IECE ${cfg.iece}%`, `${money(c.aportable)} × ${cfg.secap + cfg.iece}%`, EC.r2(c.secap + c.iece)) : '')
       + (c.prov13 ? r('Provisión décimo tercero', `${money(c.aportable)} ÷ 12`, c.prov13) : '') + (c.prov14 ? r('Provisión décimo cuarto', `SBU ÷ 12 × días/${cfg.diasMes}`, c.prov14) : '')
       + (c.provFR ? r('Provisión fondos de reserva', `${money(c.aportable)} × ${cfg.fondosReserva}%`, c.provFR) : '') + r('Provisión de vacaciones', `${money(c.aportable)} ÷ 24`, c.provVac)
       + r('Costo total del empleado', '', c.costoEmpleador, 'tot');
@@ -345,7 +346,7 @@
     v.innerHTML = `<div class="head"><div><h1>Empleados</h1><p class="sub">Cada ficha define régimen, salario y qué beneficios recibe.</p></div><div class="row"><button class="btn ghost" id="vaciar">${icon('trash')}Vaciar</button><button class="btn primary" id="add">${icon('plus')}Nuevo empleado</button></div></div>
       ${S.empleados.length ? `<div class="tablewrap"><table class="list"><thead><tr><th class="l">Empleado</th><th class="l">Cédula</th><th class="l">Régimen</th><th>Salario</th><th class="l">Ingreso</th><th>13º</th><th>14º</th><th>F. reserva</th><th>H. extra</th><th></th></tr></thead><tbody>
       ${S.empleados.map((e) => `<tr data-id="${e.id}"><td class="l"><div class="cellp">${avatar(e)}<span><b>${esc(e.nombre)}</b><small>${esc(e.cargo)}</small></span></div></td><td class="l">${esc(e.cedula)} ${e.cedula && !EC.cedulaValida(e.cedula) ? '<span class="tag bad">inválida</span>' : ''}</td>
-        <td class="l">${esc(regNombre(e).split(' (')[0])}</td><td>${money(+e.salario)}</td><td class="l">${esc(e.ingreso)}</td><td>${modoTag(e.d13)}</td><td>${modoTag(e.d14)}</td><td>${modoTag(e.fr)}</td><td>${e.horasExtras === false ? '<span class="tag mute">No</span>' : '<span class="tag ok">Sí</span>'}</td>
+        <td class="l">${esc(regNombre(e).split(' (')[0])}<small style="display:block;color:var(--muted)">${esc(EC.jornadaDe(e, S.cfg).texto)}${e.nivel ? ' · nivel ' + esc(e.nivel) : ''}</small></td><td>${money(+e.salario)}</td><td class="l">${esc(e.ingreso)}</td><td>${modoTag(e.d13)}</td><td>${modoTag(e.d14)}</td><td>${modoTag(e.fr)}</td><td>${e.horasExtras === false ? '<span class="tag mute">No</span>' : '<span class="tag ok">Sí</span>'}</td>
         <td class="acts"><button class="btn sm" data-a="ed">Editar</button><button class="btn sm ghost" data-a="liq">Liquidar</button><button class="btn sm ghost danger" data-a="del" aria-label="Borrar">${icon('trash')}</button></td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty big"><h2>Sin empleados</h2><p>Agrega el primero o carga la demo.</p><div class="row center"><button class="btn primary" id="seed">Cargar demo</button></div></div>'}`;
     $('#add').onclick = () => form(); $('#vaciar').onclick = () => App.clearModule('empleados');
@@ -361,7 +362,7 @@
   /** Ficha del empleado: secciones cortas, ayudas en «?» y vista previa con desglose desplegable. */
   function form(e) {
     const S = App.S, abiertos = {};
-    const n = e ? JSON.parse(JSON.stringify(e)) : { id: uid(), nombre: '', cedula: '', cargo: '', regimen: 'ct', salario: S.cfg.sbu, ingreso: '', region: 'sierra', d13: 'mensualiza', d14: 'mensualiza', fr: 'mensualiza', horasExtras: true, iess: true, rentaModo: 'auto', renta: 0, gastosPersonales: 0, cargas: 0 };
+    const n = e ? JSON.parse(JSON.stringify(e)) : { id: uid(), nombre: '', cedula: '', cargo: '', regimen: 'ct', salario: S.cfg.sbu, ingreso: '', region: 'sierra', d13: 'mensualiza', d14: 'mensualiza', fr: 'mensualiza', horasExtras: true, iess: true, rentaModo: 'auto', renta: 0, gastosPersonales: 0, cargas: 0, jornada: (S.cfg.jornadas[0] || {}).id || '', comision: '', nivel: '', cargoId: '' };
     const sel = (id, opts, val) => `<select id="${id}">${opts.map(([v, t]) => `<option value="${v}" ${v === val ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
     const lab = (t, h, cls = '', body = '') => `<label class="${cls}"><span class="lt">${t}${h ? tip(h) : ''}</span>${body}</label>`;
     const d = App.modal(`<div class="row between"><h3>${e ? 'Editar' : 'Nuevo'} empleado</h3><button class="btn sm ghost" id="x" type="button">${icon('x')}Cerrar</button></div>
@@ -369,12 +370,18 @@
       <section class="fs"><h4>Datos personales</h4><div class="grid2">
         ${lab('Nombre completo', '', 'span2', `<input id="nombre" required value="${esc(n.nombre)}" autocomplete="off">`)}
         ${lab('Cédula', 'Se valida el dígito verificador. Una cédula inválida no impide guardar.', '', `<input id="cedula" inputmode="numeric" maxlength="10" value="${esc(n.cedula)}" autocomplete="off"><small id="cm"></small>`)}
-        ${lab('Cargo', '', '', `<input id="cargo" value="${esc(n.cargo)}" autocomplete="off">`)}</div></section>
+        ${lab('Nombre del cargo', '', '', `<input id="cargo" value="${esc(n.cargo)}" autocomplete="off">`)}
+        ${lab('Cargo del catálogo', 'Busca y elige el cargo: fija comisión sectorial, nivel y salario mínimo. Se muestran por jerarquía (el jefe y, sangrados, sus dependientes). El catálogo se edita en Ajustes. «Otro» permite escribirlo a mano.', 'span2', `<div class="cs" id="cs"><input id="csq" type="search" placeholder="Buscar por cargo o nivel (A1, B1, C1…)" autocomplete="off"><input id="cargoId" type="hidden" value="${esc(n.cargoId || '')}"><div class="csl" id="csl" hidden></div></div>`)}</div></section>
       <section class="fs"><h4>Contrato</h4><div class="grid2">
         ${lab('Régimen laboral', 'Código del Trabajo: empresa privada. LOSEP: sector público. Define los recargos de horas extras (editables en Ajustes).', '', sel('regimen', Object.entries(S.cfg.regimenes).map(([k, r]) => [k, r.nombre.split(' (')[0]]), n.regimen))}
         ${lab('Región', 'Fija la fecha del décimo cuarto: 15 de agosto en Sierra y Oriente, 15 de marzo en Costa y Galápagos.', '', sel('region', [['sierra', 'Sierra y Oriente'], ['costa', 'Costa y Galápagos']], n.region))}
         ${lab('Salario mensual (USD)', `El SBU ${S.cfg.anio} es ${money(S.cfg.sbu)}. Un salario menor genera una alerta pero igual se calcula.`, '', `<input id="salario" type="number" min="0" step="any" required value="${n.salario}">`)}
         ${lab('Fecha de ingreso', 'Prorratea los días del primer mes y define desde cuándo corresponden fondos de reserva (12 meses cumplidos).', '', `<input id="ingreso" type="date" value="${esc(n.ingreso)}">`)}</div></section>
+      <section class="fs"><h4>Jornada y nivel salarial</h4><div class="grid2">
+        ${lab('Jornada de trabajo', 'Define las horas diarias y semanales y el valor de la hora (salario ÷ horas diarias × días del mes). Las jornadas se crean y editan en Ajustes.', 'span2', sel('jornada', S.cfg.jornadas.map((j) => [j.id, j.nombre]), n.jornada))}
+        ${lab('Comisión sectorial', 'Se elige sola según el cargo del catálogo. Solo se puede cambiar a mano si el cargo es «Otro». Sin comisión, el mínimo es el SBU.', 'span2', sel('comision', [['', 'Sin comisión (usa el SBU)'], ...S.cfg.comisiones.map((c) => [String(c.id), `N.º ${c.id} · ${c.nombre}`])], String(n.comision || '')))}
+        ${lab('Nivel ocupacional', 'A jefatura · B supervisión · C operación · D asistencia · E soporte. Con la comisión, fija el salario mínimo sectorial; con un cargo del catálogo se elige solo.', 'span2', sel('nivel', [['', 'Sin nivel'], ...S.cfg.niveles.map((x) => [x.id, `${x.id} · ${x.nombre}`])], n.nivel || ''))}
+        <p class="help span2" id="jinfo"></p></div></section>
       <section class="fs"><h4>Beneficios</h4><div class="grid2">
         ${lab('Décimo tercero', 'Un doceavo de lo ganado en el año. «Cada mes» lo suma al rol; «Se acumula» lo provisiona.', '', sel('d13', MODOS.d13, n.d13))}
         ${lab('Décimo cuarto', 'Un SBU al año, proporcional a los días trabajados.', '', sel('d14', MODOS.d14, n.d14))}
@@ -391,8 +398,35 @@
     $('#x', d).onclick = $('#cancel', d).onclick = App.closeModal;
     d.addEventListener('toggle', (ev) => { if (ev.target.dataset && ev.target.dataset.k) abiertos[ev.target.dataset.k] = ev.target.open; }, true);
     const ced = $('#cedula', d);
+    const minDe = (id) => { const x = S.cfg.cargos.find((y) => y.id === id); return x ? Math.max(+x.minimo || 0, S.cfg.sbu) : S.cfg.sbu; };
+    const NIV = (id) => (S.cfg.niveles.find((x) => x.id === id) || {}).nombre || '';
+    const norm = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const csq = $('#csq', d), csl = $('#csl', d), cid = $('#cargoId', d);
+    const etiqueta = (x) => (x ? `${x.nivel} · ${x.nombre}` : '');
+    const pinta = () => {
+      const q = norm(csq.dataset.filtro === '1' ? csq.value : ''), orden = EC.cargosOrden(S.cfg).filter(({ cargo: c }) => !q || norm(`${c.nombre} ${c.nivel} ${NIV(c.nivel)}`).includes(q));
+      csl.innerHTML = `<button type="button" class="csi otro" data-id="">Otro (escribir el cargo a mano)</button>` + (orden.length ? orden.map(({ cargo: c, depth }) => `<button type="button" class="csi ${c.id === cid.value ? 'on' : ''}" data-id="${esc(c.id)}" style="padding-left:${12 + depth * 22}px">${depth ? '<span class="cst">└</span>' : ''}<span class="cslv l${esc(c.nivel[0])}">${esc(c.nivel)}</span><span class="csn">${esc(c.nombre)}</span><small>${esc(NIV(c.nivel))} · mín. ${money(Math.max(+c.minimo || 0, S.cfg.sbu))}</small></button>`).join('') : '<p class="help" style="padding:10px 12px">Sin resultados.</p>');
+    };
+    const abre = () => { csl.hidden = false; pinta(); }, cierra = () => { csl.hidden = true; csq.dataset.filtro = ''; csq.value = etiqueta(S.cfg.cargos.find((y) => y.id === cid.value)); };
+    csq.value = etiqueta(S.cfg.cargos.find((y) => y.id === cid.value));
+    csq.addEventListener('focus', () => { csq.select(); abre(); });
+    csq.addEventListener('input', () => { csq.dataset.filtro = '1'; abre(); });
+    csq.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); cierra(); csq.blur(); } });
+    let cargoPrev = n.cargoId || '';
+    csl.addEventListener('mousedown', (ev) => ev.preventDefault()); // no pierde el foco antes del clic
+    csl.addEventListener('click', (ev) => {
+      const b = ev.target.closest('.csi'); if (!b) return;
+      const x = S.cfg.cargos.find((y) => y.id === b.dataset.id), sal = $('#salario', d), antes = minDe(cargoPrev);
+      cid.value = b.dataset.id; cargoPrev = cid.value; csq.dataset.filtro = ''; csq.value = etiqueta(x); csl.hidden = true;
+      if (x) {
+        $('#cargo', d).value = x.nombre; $('#comision', d).value = String(x.comision); $('#nivel', d).value = x.nivel;
+        if (!+sal.value || +sal.value === antes || +sal.value === S.cfg.sbu) sal.value = minDe(x.id); // salario propuesto = mínimo del cargo; se puede cambiar
+      }
+      cid.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    csq.addEventListener('blur', cierra);
     const read = () => Object.assign(n, { nombre: $('#nombre', d).value.trim(), cedula: ced.value.trim(), cargo: $('#cargo', d).value.trim(), regimen: $('#regimen', d).value, region: $('#region', d).value, salario: +$('#salario', d).value || 0, ingreso: $('#ingreso', d).value,
-      d13: $('#d13', d).value, d14: $('#d14', d).value, fr: $('#fr', d).value, cargas: +$('#cargas', d).value || 0, gastosPersonales: +$('#gastos', d).value || 0, rentaModo: $('#rm', d).value, renta: +$('#renta', d).value || 0, horasExtras: $('#he', d).checked, iess: $('#iess', d).checked });
+      d13: $('#d13', d).value, d14: $('#d14', d).value, fr: $('#fr', d).value, cargas: +$('#cargas', d).value || 0, gastosPersonales: +$('#gastos', d).value || 0, rentaModo: $('#rm', d).value, renta: +$('#renta', d).value || 0, horasExtras: $('#he', d).checked, iess: $('#iess', d).checked, jornada: $('#jornada', d).value, comision: $('#comision', d).value, nivel: $('#nivel', d).value, cargoId: $('#cargoId', d).value });
     const row = (l, v, f, cls = '') => `<dt class="${cls}">${l}${f ? `<small>${f}</small>` : ''}</dt><dd class="${cls}">${v}</dd>`;
     const bd = (k, label, total, inner) => `<details class="bd" data-k="${k}" ${abiertos[k] ? 'open' : ''}><summary><span>${label}</span><b>${money(total)}</b>${icon('chev')}</summary><dl>${inner}</dl></details>`;
     const prev = () => {
@@ -400,13 +434,16 @@
       $$('.rl', d).forEach((x) => (x.hidden = n.rentaModo !== 'manual')); $$('.ra', d).forEach((x) => (x.hidden = n.rentaModo === 'manual'));
       $('#cm', d).innerHTML = !n.cedula ? '' : EC.cedulaValida(n.cedula) ? '<span class="good">Cédula válida</span>' : '<span class="bad">Dígito verificador inválido</span>';
       const c = EC.calcular(n, {}, S.cfg, S.periodo), cfg = S.cfg;
+      const jr = c.jornada, mn = c.minimo;
+      $('#comision', d).disabled = $('#nivel', d).disabled = !!n.cargoId; // con cargo del catálogo, comisión y nivel salen del cargo
+      $('#jinfo', d).innerHTML = `<b>${jr.texto}</b> · ${jr.horasDia} h diarias · ${jr.horasSem} h semanales · valor hora ${money(c.valorHora)} (${money(n.salario)} ÷ ${c.horasMes} h)${jr.nocDia ? ` · ${jr.nocDia} h/día dentro del horario nocturno (recargo ${(S.cfg.regimenes[n.regimen] || S.cfg.regimenes.ct).nocturno}%)` : ''}<br>Salario mínimo aplicable: <b>${money(mn.valor)}</b> (${esc(mn.fuente)})`;
       const ing = row('Sueldo', money(c.sueldo), `${money(n.salario)} ÷ ${cfg.diasMes} × ${c.dias} días`)
         + (c.d13Pago ? row('Décimo tercero', money(c.d13Pago), `${money(c.aportable)} ÷ 12`) : '') + (c.d14Pago ? row('Décimo cuarto', money(c.d14Pago), `SBU ${money(cfg.sbu)} ÷ 12`) : '')
         + (c.frPago ? row('Fondos de reserva', money(c.frPago), `${money(c.aportable)} × ${cfg.fondosReserva}%`) : '');
       const rd = c.rentaDet;
       const dsc = row('Aporte IESS', money(c.iessEmp), `${money(c.aportable)} × ${cfg.iessPersonal}%`)
         + row('Retención de renta', money(c.renta), rd ? `(impuesto ${money(rd.impuestoAnual)} − rebaja ${money(rd.rebaja)}) ÷ 12` : 'valor manual');
-      const emp = row('Ingresos pagados', money(c.totalIngresos), '') + row(`Aporte patronal ${cfg.iessPatronal}%`, money(c.patronal), `${money(c.aportable)} × ${cfg.iessPatronal}%`) + row(`SECAP + IECE ${cfg.secap + cfg.iece}%`, money(EC.r2(c.secap + c.iece)), '')
+      const emp = row('Ingresos pagados', money(c.totalIngresos), '') + row(`Aporte patronal ${cfg.iessPatronal}%`, money(c.patronal), `${money(c.aportable)} × ${cfg.iessPatronal}%`) + row(`Aporte personal IESS ${cfg.iessPersonal}%`, money(c.iessEmp), `${money(c.aportable)} × ${cfg.iessPersonal}% · se descuenta al empleado, ya está en los ingresos`) + (cfg.secap + cfg.iece ? row(`SECAP + IECE ${cfg.secap + cfg.iece}%`, money(EC.r2(c.secap + c.iece)), '') : '')
         + (c.prov13 ? row('Provisión 13º', money(c.prov13), `${money(c.aportable)} ÷ 12`) : '') + (c.prov14 ? row('Provisión 14º', money(c.prov14), 'SBU ÷ 12') : '') + (c.provFR ? row('Provisión fondos', money(c.provFR), `× ${cfg.fondosReserva}%`) : '')
         + row('Provisión vacaciones', money(c.provVac), `${money(c.aportable)} ÷ 24`) + row('Costo total', money(c.costoEmpleador), '', 'tot');
       $('#pv', d).innerHTML = `<h4>Vista previa mensual</h4><p class="sub">${App.periodoLabel(S.periodo)} · sin horas extras ni novedades</p>${bd('ing', 'Ingresos', c.totalIngresos, ing)}${bd('dsc', 'Descuentos', c.totalEgresos, dsc)}

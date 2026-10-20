@@ -257,3 +257,11 @@ dialog h3 { font-size: 1.2rem; margin-bottom: 6px; } dialog p { color: var(--mut
 .grid2 { align-items: start; } .docform { grid-template-columns: 1fr 310px; } .bd dl { grid-template-columns: 1fr auto; } .bd dt { min-width: 0; } .bd-net span { white-space: nowrap; }
 @media (max-width: 1080px) { .docform { grid-template-columns: 1fr; } }
 @media print { .pcons table { table-layout: fixed; } .pcons td, .pcons th { overflow: hidden; text-overflow: clip; } .pcons td.nm { white-space: nowrap; } }
+
+/* Selector de cargos con jerarquía y buscador */
+.cs { position: relative; } .csl { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); max-height: 300px; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 32px -12px rgba(0, 0, 0, .35); padding: 4px; }
+.csi { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; width: 100%; text-align: left; border: 0; background: none; padding: 8px 12px; border-radius: 7px; cursor: pointer; } .csi:hover, .csi.on { background: var(--soft); }
+.csi.otro { color: var(--muted); border-bottom: 1px solid var(--line2); border-radius: 7px 7px 0 0; margin-bottom: 2px; }
+.csi small { flex-basis: 100%; color: var(--muted); font-size: .74rem; } .csi .csn { font-weight: 600; } .cst { color: var(--muted); margin-right: 4px; }
+.cslv { font-size: .7rem; font-weight: 800; padding: 1px 6px; border-radius: 5px; background: var(--soft); border: 1px solid var(--line); }
+.cslv.lA { background: #0b3a6b; color: #fff; border-color: #0b3a6b; } .cslv.lB { background: #1565c0; color: #fff; border-color: #1565c0; } .cslv.lC { background: #0097a7; color: #fff; border-color: #0097a7; } .cslv.lD, .cslv.lE { background: #6b7685; color: #fff; border-color: #6b7685; }

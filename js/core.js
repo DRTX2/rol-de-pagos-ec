@@ -14,7 +14,8 @@
   // Parámetros legales guardados con una versión anterior se actualizan a los vigentes
   const fixCfg = (c) => {
     const d = EC.DEFAULTS, out = Object.assign({}, d, c || {});
-    if ((c || {}).ver !== d.ver) ['ver', 'rebajaGastos', 'canasta', 'canastas', 'topeIngresos', 'irTabla'].forEach((k) => { out[k] = JSON.parse(JSON.stringify(d[k])); });
+    Object.keys(d).forEach((k) => { if (!(c && k in c)) out[k] = JSON.parse(JSON.stringify(d[k])); }); // parámetros nuevos: copia propia, no la referencia compartida
+    if ((c || {}).ver !== d.ver) ['ver', 'secap', 'iece', 'cargos', 'comisiones', 'rebajaGastos', 'canasta', 'canastas', 'topeIngresos', 'irTabla'].forEach((k) => { out[k] = JSON.parse(JSON.stringify(d[k])); });
     return out;
   };
   const hoy = new Date();
@@ -183,7 +184,7 @@
 
   /* ---------- Shell ---------- */
   const NAV = [
-    ['Nómina', [['resumen', 'dash', 'Resumen'], ['rol', 'rol', 'Rol de pagos'], ['empleados', 'users', 'Empleados'], ['liquidaciones', 'exit', 'Liquidaciones']]],
+    ['Nómina', [['resumen', 'dash', 'Resumen'], ['rol', 'rol', 'Rol de pagos'], ['empleados', 'users', 'Empleados'], ['remuneraciones', 'calc', 'Remuneraciones'], ['liquidaciones', 'exit', 'Liquidaciones']]],
     ['Facturación', [['comprobantes', 'doc', 'Comprobantes'], ['catalogo', 'cart', 'Clientes y productos']]],
     ['Normativa', [['legal', 'shield', 'Cumplimiento'], ['herramientas', 'tool', 'Herramientas']]],
     ['Sistema', [['ajustes', 'cog', 'Ajustes y datos']]],
