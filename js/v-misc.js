@@ -16,11 +16,11 @@
       ['Cuota de personas con discapacidad: 4% desde 25 trabajadores', 'Contratación inclusiva y registrada.', 'Código del Trabajo, art. 42'],
     ]],
     ['Cada mes', [
-      ['Rol de pagos firmado por cada trabajador', 'Respaldo del pago y del gasto deducible. Este sistema lo imprime.', 'Código del Trabajo, art. 85'],
+      ['Rol de pagos firmado por cada trabajador', 'Respaldo del pago y del gasto deducible. Este sistema lo imprime con firma y valor en letras.', 'Código del Trabajo y Reglamento a la LRTI'],
       ['Pagar la remuneración mensual completa', 'El pago por transferencia deja constancia.', 'Código del Trabajo, art. 83'],
       ['Planilla IESS pagada a tiempo', 'Aporte personal 9,45% y patronal 11,15%, más SECAP e IECE.', 'Ley de Seguridad Social'],
       ['Declaración de IVA y retenciones (formularios 104 y 103)', 'Mensual o semestral según el régimen.', 'Ley de Régimen Tributario Interno'],
-      ['Retener impuesto a la renta si el sueldo supera la fracción básica', 'Se declara en el formulario 103.', 'Reglamento LRTI'],
+      ['Retener impuesto a la renta si el ingreso anual proyectado supera la fracción básica', 'Se proyecta el año, se resta la rebaja por la proyección de gastos personales que entrega el trabajador y se declara en el formulario 103.', 'Reglamento a la LRTI'],
       ['Registrar y autorizar las horas extras', 'Máximo 4 horas al día y 12 a la semana.', 'Código del Trabajo, art. 55'],
       ['Jornada de 8 horas diarias, 40 semanales, con 2 días de descanso', 'Excepciones por turnos o trabajos especiales.', 'Código del Trabajo, art. 47 y 50'],
     ]],
@@ -30,7 +30,7 @@
       ['Fondos de reserva desde el segundo año', '8,33% mensual; se paga cada mes o se deposita en el IESS a pedido del trabajador.', 'Código del Trabajo, art. 196'],
       ['Participación de utilidades (15%) hasta el 15 de abril', '10% para los trabajadores y 5% para sus cargas.', 'Código del Trabajo, art. 97'],
       ['Vacaciones: 15 días anuales, más 1 día por año desde el quinto', 'Mantén un registro de las tomadas y pendientes.', 'Código del Trabajo, art. 69 y 71'],
-      ['Formulario 107 y anexo RDEP', 'Comprobante de retenciones al trabajador y anexo al SRI.', 'Resoluciones SRI'],
+      ['Formulario 107 y anexo RDEP en enero', 'Entrega el comprobante 107 a cada trabajador y presenta el anexo; el calendario se escalona por el noveno dígito del RUC.', 'LRTI, art. 50, y resoluciones SRI'],
       ['Verificar el salario digno', 'Si la utilidad no alcanza, se complementa en el pago de utilidades.', 'Código del Trabajo, art. 97 y 98'],
     ]],
     ['Situaciones especiales', [
@@ -73,7 +73,8 @@
       <section class="card"><h2>Verificar clave de acceso</h2><label>Clave de 49 dígitos<input id="ck" inputmode="numeric" maxlength="49" placeholder="Pega la clave de acceso de un comprobante"></label><div id="cr" class="result"></div></section>
       <section class="card"><h2>Hora extra</h2><div class="grid2"><label>Salario mensual<input id="qs" type="number" value="${S.cfg.sbu}"></label><label>Horas<input id="qh" type="number" value="1" min="0"></label>
         <label class="span2">Tipo<select id="qt"><option value="suplementaria">Suplementaria (hasta medianoche)</option><option value="extraordinaria">Extraordinaria (madrugada, fines de semana y feriados)</option><option value="nocturno">Recargo nocturno (19h00 a 06h00)</option></select></label></div><div id="qr" class="result"></div></section>
-      <section class="card"><h2>Retención de renta mensual</h2><div class="grid2"><label>Ingreso mensual gravado<input id="rs" type="number" value="2000"></label><label>Gastos personales anuales<input id="rg" type="number" value="0"></label></div><div id="rr" class="result"></div></section></div>`;
+      <section class="card"><h2>Retención de renta mensual</h2><div class="grid2"><label>Ingreso mensual gravado (USD)<input id="rs" type="number" value="2000"></label><label>Gastos personales al año (USD)<input id="rg" type="number" value="0"></label><label>Cargas familiares<input id="rc" type="number" value="0"></label></div><div id="rr" class="result"></div></section>
+      <section class="card"><h2>Tabla del SRI</h2><div id="rt"></div></section></div>`;
     $('#vn').oninput = (e) => { const x = e.target.value.trim(), o = $('#vr');
       if (!x) { o.innerHTML = ''; return; }
       if (x.length <= 10) { const ok = EC.cedulaValida(x); o.innerHTML = x.length < 10 ? '<p class="sub">Sigue escribiendo…</p>' : `<span class="tag ${ok ? 'ok' : 'bad'}">${ok ? 'Cédula válida' : 'Cédula inválida'}</span>`; return; }
@@ -86,9 +87,10 @@
     const q = () => { const vh = $('#qs').value / S.cfg.horasMes, r = S.cfg.regimenes.ct, rec = r[$('#qt').value], mult = $('#qt').value === 'nocturno' ? rec / 100 : 1 + rec / 100;
       $('#qr').innerHTML = `<dl class="rows"><dt>Valor de la hora (salario ÷ ${S.cfg.horasMes})</dt><dd>${money(vh)}</dd><dt>Valor de la hora extra</dt><dd>${money(vh * mult)}</dd><dt class="tot">Total a pagar</dt><dd class="tot">${money(vh * mult * $('#qh').value)}</dd></dl>`; };
     ['qs', 'qh', 'qt'].forEach((id) => ($('#' + id).oninput = q)); q();
-    const r = () => { const a = +$('#rs').value, iess = EC.r2((a * S.cfg.iessPersonal) / 100), x = EC.retencionMensual(a, iess, +$('#rg').value, S.cfg);
-      $('#rr').innerHTML = `<dl class="rows"><dt>Base anual (ingreso − IESS)</dt><dd>${money(x.base)}</dd><dt>Impuesto causado</dt><dd>${money(x.impuestoAnual)}</dd><dt>Rebaja por gastos personales</dt><dd>${money(x.rebaja)}</dd><dt class="tot">Retención mensual</dt><dd class="tot">${money(x.mensual)}</dd></dl>`; };
-    ['rs', 'rg'].forEach((id) => ($('#' + id).oninput = r)); r();
+    const r = () => { const a = +$('#rs').value || 0, iess = EC.r2((a * S.cfg.iessPersonal) / 100), x = EC.retencionMensual(a, iess, +$('#rg').value || 0, +$('#rc').value || 0, S.cfg);
+      $('#rr').innerHTML = `<dl class="rows"><dt>Base anual (ingreso − IESS) × 12</dt><dd>${money(x.base)}</dd><dt>Impuesto causado según la tabla</dt><dd>${money(x.impuestoAnual)}</dd><dt>Gasto permitido (tope ${money(x.tope)})</dt><dd>${money(x.permitido)}</dd><dt>Rebaja ${S.cfg.rebajaGastos}%</dt><dd>${money(x.rebaja)}</dd><dt class="tot">Retención mensual</dt><dd class="tot">${money(x.mensual)}</dd></dl>`;
+      $('#rt').innerHTML = App.irTableHTML(x.base, +$('#rc').value || 0); };
+    ['rs', 'rg', 'rc'].forEach((id) => ($('#' + id).oninput = r)); r();
   };
 
   /* ---------- Ajustes ---------- */
@@ -124,14 +126,16 @@
   }
   function params(h) {
     const c = App.S.cfg, f = (k, l, st = 'any') => `<label>${l}<input type="number" step="${st}" data-cfg="${k}" value="${c[k]}"></label>`;
-    h.innerHTML = `<div class="note">Valores 2026: SBU $482 (Consejo Nacional de Trabajo y Salarios), IESS 9,45% personal y 11,15% patronal, tabla de renta según la resolución NAC-DGERCGC25-00000043. Verifica antes de aplicarlos en una empresa real.</div>
+    h.innerHTML = `<div class="note"><b>Verificados en octubre de 2026</b> con prensa y firmas legales (no con el SRI directamente): SBU $482 (Consejo Nacional de Trabajo y Salarios, 15-dic-2025) · IESS 9,45% personal y 11,15% patronal · SECAP 0,5% e IECE 0,5% · IVA 15% (circular SRI NAC-DGECCGC25-00000006) · tabla de renta 2026 (resolución NAC-DGERCGC25-00000043).<br><b>Para confirmar con tu contador:</b> canasta básica $821,80, topes de gastos personales por cargas y rebaja del 18%, porque las fuentes no coinciden del todo.</div>
       <div class="cols"><section class="card"><h2>Generales</h2><div class="grid2">${f('sbu', 'SBU (salario básico)')}${f('horasMes', 'Horas por mes', '1')}${f('diasMes', 'Días por mes', '1')}${f('iva', 'IVA (%)')}</div></section>
-      <section class="card"><h2>Aportes y fondos (%)</h2><div class="grid2">${f('iessPersonal', 'IESS personal')}${f('iessPatronal', 'IESS patronal')}${f('secap', 'SECAP')}${f('iece', 'IECE')}${f('fondosReserva', 'Fondos de reserva')}${f('rebajaGastos', 'Rebaja por gastos personales')}</div></section></div>
+      <section class="card"><h2>Aportes y fondos (%)</h2><div class="grid2">${f('iessPersonal', 'IESS personal')}${f('iessPatronal', 'IESS patronal')}${f('secap', 'SECAP')}${f('iece', 'IECE')}${f('fondosReserva', 'Fondos de reserva')}${f('rebajaGastos', 'Rebaja por gastos personales')}${f('topeIngresos', 'Tope de gastos (% de ingresos)')}${f('canasta', 'Canasta familiar básica (USD)')}</div></section></div>
       <section class="card"><h2>Regímenes y recargos de horas extras (%)</h2><div class="tablewrap flat"><table class="list"><thead><tr><th class="l">Régimen</th><th>Suplementaria</th><th>Extraordinaria</th><th>Nocturno</th></tr></thead><tbody>${Object.entries(c.regimenes).map(([k, r]) => `<tr><td class="l">${esc(r.nombre)}</td>${['suplementaria', 'extraordinaria', 'nocturno'].map((x) => `<td><input type="number" data-reg="${k}.${x}" value="${r[x]}"></td>`).join('')}</tr>`).join('')}</tbody></table></div></section>
+      <section class="card"><h2>Tope de gastos personales por cargas familiares</h2><p class="sub">Número de canastas básicas deducibles según las cargas del empleado.</p><div class="tablewrap flat"><table class="list"><thead><tr>${c.canastas.map((_, i) => `<th>${i === c.canastas.length - 1 ? i + ' o más' : i + ' cargas'}</th>`).join('')}</tr></thead><tbody><tr>${c.canastas.map((k, i) => `<td><input type="number" data-can="${i}" value="${k}"></td>`).join('')}</tr></tbody></table></div></section>
       <section class="card"><h2>Tabla de impuesto a la renta (anual)</h2><div class="tablewrap flat"><table class="list"><thead><tr><th>Fracción básica</th><th>Exceso hasta</th><th>Impuesto base</th><th>% excedente</th></tr></thead><tbody>${c.irTabla.map((t, i) => `<tr><td>${money(t.desde)}</td><td>${t.hasta === null ? 'en adelante' : money(t.hasta)}</td><td><input type="number" data-ir="${i}.base" value="${t.base}"></td><td><input type="number" data-ir="${i}.pct" value="${t.pct}"></td></tr>`).join('')}</tbody></table></div></section>
       <div class="row"><button class="btn danger" id="rst">Restaurar valores 2026</button></div>`;
     $$('[data-cfg]', h).forEach((i) => (i.oninput = () => { c[i.dataset.cfg] = +i.value; App.save(); }));
     $$('[data-reg]', h).forEach((i) => (i.oninput = () => { const [k, x] = i.dataset.reg.split('.'); c.regimenes[k][x] = +i.value; App.save(); }));
+    $$('[data-can]', h).forEach((i) => (i.oninput = () => { c.canastas[+i.dataset.can] = +i.value; App.save(); }));
     $$('[data-ir]', h).forEach((i) => (i.oninput = () => { const [k, x] = i.dataset.ir.split('.'); c.irTabla[+k][x] = +i.value; App.save(); }));
     $('#rst').onclick = () => App.clearModule('params');
   }

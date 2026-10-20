@@ -1,0 +1,272 @@
+# Cómo funciona el rol de pagos
+
+Documentación del sistema: qué hace cada pantalla, qué significa cada campo y cómo se calcula cada cifra. Todos los ejemplos usan los parámetros 2026 y se pueden reproducir en la aplicación.
+
+- [1. Visión general](#1-visión-general)
+- [2. Flujo de trabajo del mes](#2-flujo-de-trabajo-del-mes)
+- [3. Ficha del empleado](#3-ficha-del-empleado)
+- [4. Novedades del mes](#4-novedades-del-mes)
+- [5. Cómo se calcula cada línea del rol](#5-cómo-se-calcula-cada-línea-del-rol)
+- [6. Impuesto a la renta](#6-impuesto-a-la-renta)
+- [7. Costo para la empresa](#7-costo-para-la-empresa)
+- [8. Liquidación (finiquito)](#8-liquidación-finiquito)
+- [9. Utilidades](#9-utilidades)
+- [10. Simulador de comprobantes SRI](#10-simulador-de-comprobantes-sri)
+- [11. Documentos y exportaciones](#11-documentos-y-exportaciones)
+- [12. Parámetros legales y su origen](#12-parámetros-legales-y-su-origen)
+- [13. Glosario](#13-glosario)
+- [14. Límites conocidos](#14-límites-conocidos)
+
+## 1. Visión general
+
+Aplicación web sin servidor: todo se calcula en el navegador y los datos se guardan en el `localStorage` del equipo. No hay cuentas ni envío de información.
+
+| Pantalla | Para qué sirve |
+|---|---|
+| Resumen | Neto total, reparto del costo, evolución mensual, vencimientos y alertas |
+| Rol de pagos | Ingresar las novedades del mes y ver el rol de cada empleado |
+| Empleados | Fichas con régimen, salario y beneficios |
+| Liquidaciones | Finiquito y reparto de utilidades |
+| Comprobantes, Clientes y productos | Simulador de factura, notas, guía de remisión y retención |
+| Cumplimiento | Lista de obligaciones laborales y tributarias con su base legal |
+| Herramientas | Validador de cédula, RUC y clave de acceso; calculadoras de horas extra y renta |
+| Ajustes y datos | Empresa, parámetros legales, respaldo y borrado por módulo |
+
+## 2. Flujo de trabajo del mes
+
+1. **Una sola vez:** en Ajustes → Empresa escribe razón social y RUC. En Empleados crea una ficha por trabajador.
+2. **Cada mes:** elige el periodo arriba y abre **Rol de pagos**.
+3. Para cada empleado ingresa lo que cambió ese mes: días, horas extras, bonos, anticipos, préstamos, descuentos. Si no cambió nada, no escribas nada.
+4. Revisa los avisos (sueldo bajo el SBU, demasiadas horas extra, neto negativo).
+5. Imprime los roles para firma y el consolidado para contabilidad, o exporta a Excel.
+6. «Copiar mes anterior» repite las novedades del mes pasado.
+
+## 3. Ficha del empleado
+
+| Campo | Qué es | Efecto en el cálculo |
+|---|---|---|
+| Régimen laboral | Código del Trabajo, LOSEP o doméstico | Define los recargos de las horas extras (editables en Ajustes) |
+| Región | Sierra y Oriente, o Costa y Galápagos | Fecha del décimo cuarto (15 de agosto o 15 de marzo); se usa en el finiquito |
+| Salario mensual | Remuneración pactada | Base de todo el cálculo |
+| Fecha de ingreso | Inicio de la relación laboral | Prorratea el primer mes y activa fondos de reserva al cumplir 12 meses |
+| Décimo tercero | Cada mes, se acumula o no aplica | «Cada mes» suma 1/12 al rol; «se acumula» lo provisiona para diciembre |
+| Décimo cuarto | Ídem | «Cada mes» suma SBU/12; «se acumula» lo provisiona |
+| Fondos de reserva | Ídem | «Cada mes» suma 8,33% desde el mes 13; «se acumula» significa que se deposita en el IESS a pedido del trabajador |
+| Cargas familiares | Hijos o dependientes | Sube el tope de gastos deducibles (renta) y reparte el 5% de utilidades |
+| Gastos personales al año | Proyección del trabajador | Genera una rebaja del impuesto a la renta (con tope) |
+| Retención de renta | Automática o manual | Automática usa la tabla del SRI; manual usa el valor que indiques |
+| Recibe horas extras | Sí o no | Cargos de dirección o confianza suelen no recibirlas |
+| Afiliado al IESS | Sí o no | Si no, no se calculan aportes |
+
+Estados de los beneficios:
+
+| Estado | Entra al rol | Va a provisiones |
+|---|---|---|
+| Se paga cada mes | Sí | No |
+| Se acumula | No | Sí |
+| No aplica | No | No |
+
+## 4. Novedades del mes
+
+| Campo | Significado |
+|---|---|
+| Días trabajados | Hasta 30. Si no lo tocas, es el mes completo o, el mes de ingreso, desde la fecha de ingreso |
+| Horas suplementarias | Hasta las 24h00 en días laborables. Recargo 50% |
+| Horas extraordinarias | De 24h00 a 6h00, sábados, domingos y feriados. Recargo 100% |
+| Horas nocturnas | Jornada normal entre 19h00 y 6h00. Recargo 25% sobre la hora |
+| Bonos o comisiones | Pagos habituales; **aportan** al IESS, décimo tercero y fondos |
+| Otros ingresos | Movilización, alimentación; **no aportan** |
+| Anticipo | Adelanto de sueldo; se descuenta |
+| Préstamos | Cuotas de préstamos IESS o de la empresa |
+| Otros descuentos | Multas, convenios autorizados |
+
+Todos los campos aceptan decimales y valores mayores al máximo del slider. Dejar un campo vacío lo devuelve a su valor por defecto.
+
+## 5. Cómo se calcula cada línea del rol
+
+Ejemplo: Juan Pérez, salario $800, ingresó el 15/01/2024, tres beneficios «cada mes». Novedades: 30 días, 10 h suplementarias, 4 h extraordinarias, bonos $50, otros ingresos $20, anticipo $100, préstamos $30, otros descuentos $5.
+
+**Valor de la hora** = salario ÷ 240 = 800 ÷ 240 = 3,3333.
+
+### Ingresos
+| Línea | Fórmula | Valor |
+|---|---|---|
+| Sueldo | salario ÷ 30 × días | $800.00 |
+| Horas suplementarias | valor hora × 1,5 × horas | $50.00 |
+| Horas extraordinarias | valor hora × 2 × horas | $26.67 |
+| Recargo nocturno | valor hora × 0,25 × horas | $0.00 |
+| Bonos y comisiones | ingresado | $50.00 |
+| Otros ingresos | ingresado | $20.00 |
+| Décimo tercero | **base aportable** ÷ 12 | $77.22 |
+| Décimo cuarto | SBU ÷ 12 × días/30 | $40.17 |
+| Fondos de reserva | base aportable × 8,33% | $77.19 |
+| **Total ingresos** | suma | **$1,141.25** |
+
+**Base aportable** = sueldo + horas extras + bonos = 800 + 76,67 + 50 = **$926.67**. Es la base del IESS, del décimo tercero, de los fondos de reserva y de las provisiones. Los «otros ingresos» no entran.
+
+### Egresos
+| Línea | Fórmula | Valor |
+|---|---|---|
+| Aporte IESS | base aportable × 9,45% | $87.57 |
+| Retención de renta | ver sección 6 | $0.00 |
+| Anticipo, préstamos, otros | ingresados | $135.00 |
+| **Total egresos** | suma | **$222.57** |
+
+### Neto
+**Neto a recibir = total ingresos − total egresos = 1.141,25 − 222,57 = $918.68.**
+
+### Reglas que conviene recordar
+- **Fondos de reserva** solo se calculan desde que el empleado cumple 12 meses; antes aparece $0.00 y un aviso.
+- **Primer mes:** si el empleado ingresó el día 16, se pagan 15 días (año comercial de 30 días).
+- **Día 31:** el sistema usa meses de 30 días, como la práctica laboral ecuatoriana.
+- Los cálculos usan decimales completos y redondean a centavos solo al mostrar cada línea.
+
+## 6. Impuesto a la renta
+
+La retención mensual se obtiene proyectando el año:
+
+1. **Base anual** = (base aportable − aporte IESS) × 12.
+2. **Impuesto causado** según la tabla progresiva: impuesto base del tramo + % × (base − fracción básica del tramo).
+3. **Rebaja por gastos personales** = 18% × el menor entre tus gastos del año, el tope según cargas y el 50% de los ingresos.
+4. **Retención mensual** = (impuesto causado − rebaja) ÷ 12, nunca menor a cero.
+
+Tabla 2026 (resolución NAC-DGERCGC25-00000043):
+
+| Desde | Hasta | Impuesto base | % del excedente |
+|---|---|---|---|
+| 0 | 12.208 | 0 | 0% |
+| 12.208 | 15.549 | 0 | 5% |
+| 15.549 | 20.188 | 167 | 10% |
+| 20.188 | 26.700 | 631 | 12% |
+| 26.700 | 35.136 | 1.412 | 15% |
+| 35.136 | 46.575 | 2.678 | 20% |
+| 46.575 | 62.005 | 4.965 | 25% |
+| 62.005 | 82.679 | 8.823 | 30% |
+| 82.679 | 109.956 | 15.025 | 35% |
+| 109.956 | en adelante | 24.572 | 37% |
+
+Tope de gastos personales por cargas (canasta familiar básica $821,80):
+
+| Cargas | Canastas | Gasto máximo | Rebaja máxima (18%) |
+|---|---|---|---|
+| 0 | 7 | $5.752,60 | $1.035,47 |
+| 1 | 9 | $7.396,20 | $1.331,32 |
+| 2 | 11 | $9.039,80 | $1.627,16 |
+| 3 | 14 | $11.505,20 | $2.070,94 |
+| 4 | 17 | $13.970,60 | $2.514,71 |
+| 5 o más | 20 | $16.436,00 | $2.958,48 |
+
+**Ejemplo:** sueldo $3.000, beneficios acumulados, gastos personales $8.000.
+- IESS: 3.000 × 9,45% = 283,50. Base anual: (3.000 − 283,50) × 12 = **32.598**.
+- Tramo 26.700 a 35.136: 1.412 + 15% × (32.598 − 26.700) = **2.296,70**.
+- Sin cargas: gasto permitido = menor(8.000; 5.752,60) → rebaja 18% = 1.035,47 → retención (2.296,70 − 1.035,47) ÷ 12 = **$105.10**.
+- Con 2 cargas: gasto permitido 8.000 → rebaja 1.440 → retención **$71.39**.
+
+Si el sueldo anual proyectado no supera la fracción básica, la retención es $0.00 aunque no haya gastos.
+
+## 7. Costo para la empresa
+
+| Concepto | Fórmula | Ejemplo ($800 con extras y bonos) |
+|---|---|---|
+| Total ingresos pagados | del rol | $1,141.25 |
+| Aporte patronal IESS | base aportable × 11,15% | $103.32 |
+| SECAP + IECE | base aportable × 1% (0,5% + 0,5%, cada uno redondeado) | $9.26 |
+| Provisión décimo tercero (si se acumula) | base aportable ÷ 12 | — |
+| Provisión décimo cuarto (si se acumula) | SBU ÷ 12 × días/30 | — |
+| Provisión fondos de reserva (si se acumula) | base aportable × 8,33% | — |
+| Provisión de vacaciones | base aportable ÷ 24 | $38.61 |
+| **Costo total** | suma | **$1,292.44** |
+
+La provisión de vacaciones equivale a 15 días por año (15/360 = 1/24 del sueldo).
+
+La **planilla IESS** del mes es: aporte personal (retenido al trabajador) + patronal + SECAP + IECE.
+
+## 8. Liquidación (finiquito)
+
+Pantalla **Liquidaciones → Finiquito**. Años de servicio con año comercial de 360 días; **la fracción de año cuenta como año completo** para desahucio e indemnización.
+
+| Rubro | Fórmula |
+|---|---|
+| Sueldo pendiente | salario ÷ 30 × días del último mes (hasta 30) |
+| Décimo tercero proporcional | salario × días desde el 1 de diciembre ÷ 360 (solo si se acumulaba) |
+| Décimo cuarto proporcional | SBU × días del periodo ÷ 360 (solo si se acumulaba); periodo desde el 1 de agosto (Sierra) o 1 de marzo (Costa) |
+| Vacaciones no gozadas | salario ÷ 30 × (15 días × años − días tomados + días adicionales) |
+| Desahucio | 25% × último salario × años completos (desahucio y despido) |
+| Indemnización por despido intempestivo | hasta 3 años de servicio: 3 salarios; más de 3 años: 1 salario por año, máximo 25 |
+| Utilidades y fondos pendientes | los ingresas |
+| Descuento | aporte IESS sobre el sueldo pendiente + otros |
+
+**Ejemplo:** salario $600, ingreso 01/01/2024, salida 30/06/2026, despido intempestivo. Servicio: 2,5 años (3 completos). Indemnización 3 × 600 = **1.800**; desahucio 25% × 600 × 3 = **450**; décimo tercero acumulado 600 × 210 ÷ 360 = **350**.
+
+## 9. Utilidades
+
+15% de la utilidad líquida del ejercicio:
+
+- **10%** se reparte según los **días trabajados** del año de cada empleado.
+- **5%** se reparte según las **cargas familiares**.
+
+Ejemplo: utilidad $100.000 → 15% = $15.000 (10.000 por días y 5.000 por cargas). Si un empleado trabajó 360 días y otro 180, el primero recibe 10.000 × 360 ÷ 540 = $6.666,67 por días.
+
+## 10. Simulador de comprobantes SRI
+
+Herramienta académica; los documentos **no** se envían al SRI ni tienen validez tributaria.
+
+| Documento | Uso | Reglas del simulador |
+|---|---|---|
+| Factura | Venta de bienes o servicios | IVA 15% o 0% por línea; consumidor final hasta $50 |
+| Nota de crédito | Devoluciones, descuentos o anulaciones posteriores | Referencia una factura y no puede superar su total |
+| Nota de débito | Valores adicionales (intereses, gastos) | Referencia una factura |
+| Guía de remisión | Traslado de mercadería | Sin valores; transportista, placa, origen y destino |
+| Retención | El comprador retiene renta o IVA al pagar | Base × porcentaje; códigos referenciales |
+
+**Clave de acceso (49 dígitos):** fecha (8) + tipo de comprobante (2) + RUC (13) + ambiente (1) + serie (6) + secuencial (9) + código numérico (8) + tipo de emisión (1) + dígito verificador (1, módulo 11). Se puede verificar en Herramientas.
+
+Flujo simulado de «Enviar al SRI»: generar XML → firmar → recepción → autorización → RIDE.
+
+## 11. Documentos y exportaciones
+
+| Salida | Contenido |
+|---|---|
+| Rol individual | A4 vertical: datos del empleado, ingresos y egresos alineados, neto, valor en letras, valores acumulados no pagados y firmas |
+| Imprimir roles | Todos los roles, dos por página |
+| Consolidado | A4 horizontal: todos los empleados, con áreas en color, totales y firmas de elaborado, revisado y aprobado |
+| Excel (.xlsx) | Hoja «Rol de pagos» por áreas con color y totales con fórmulas; hoja «Parámetros» con los valores usados. La cédula queda como texto |
+| CSV | Para otros sistemas; la cédula conserva ceros |
+| Respaldo JSON | Todos los datos de la aplicación (Ajustes → Datos) |
+
+## 12. Parámetros legales y su origen
+
+Verificados en octubre de 2026 con prensa y firmas legales; no se consultó el SRI ni el IESS directamente.
+
+| Parámetro | Valor | Estado |
+|---|---|---|
+| SBU 2026 | $482 | Confirmado (Consejo Nacional de Trabajo y Salarios, 15-dic-2025) |
+| Aporte personal / patronal IESS | 9,45% / 11,15% | Confirmado |
+| SECAP e IECE | 0,5% cada uno | Confirmado (12,15% patronal total) |
+| IVA | 15% | Confirmado (circular SRI NAC-DGECCGC25-00000006) |
+| Tabla de renta 2026 | ver sección 6 | Confirmado (NAC-DGERCGC25-00000043); fuentes de terceros |
+| Canasta básica, topes por cargas, rebaja del 18% | $821,80; 7 a 20 canastas | **Confirmar con tu contador**: las fuentes no coinciden del todo |
+| Recargos horas extras (LOSEP) | 25% / 100% / 25% | Editable; confirmar según tu caso |
+| Códigos de retención SRI | varios | Referenciales |
+
+Todos son editables en Ajustes → Parámetros legales, con botón para restaurar los valores 2026.
+
+## 13. Glosario
+
+- **SBU:** salario básico unificado.
+- **Base aportable:** sueldo + horas extras + bonos; base del IESS y de los beneficios.
+- **Mensualizar:** pagar el beneficio cada mes en el rol.
+- **Acumular / provisionar:** reservar el valor para pagarlo en su fecha legal.
+- **Fracción básica:** parte del ingreso anual que no paga impuesto a la renta.
+- **Rebaja por gastos personales:** crédito que se resta del impuesto, no de la base.
+- **RDEP:** anexo de retenciones en relación de dependencia.
+- **RIDE:** representación impresa del documento electrónico.
+- **SUT:** Sistema Único de Trabajo del Ministerio de Trabajo.
+
+## 14. Límites conocidos
+
+- No genera la planilla del IESS ni el anexo RDEP.
+- Los décimos del finiquito se calculan con el salario actual, sin reconstruir variaciones salariales pasadas.
+- La proyección de renta supone ingresos constantes durante el año; no recalcula con meses anteriores.
+- No incluye jornadas parciales, destajo ni trabajadores con sueldo variable por obra.
+- Cálculo referencial: confirma con un contador antes de pagar o declarar.

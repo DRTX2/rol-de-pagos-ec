@@ -122,3 +122,27 @@ console.log('OK v2');
   assert.strictEqual(r2.neto, 0);
 }
 console.log('OK v3');
+
+// ---- v4: gastos personales por cargas, números a letras
+{
+  // 3000 de sueldo, gastos 8000, sin cargas: tope 7 canastas = 5752.60, rebaja 18% = 1035.47
+  const base = { regimen: 'ct', salario: 3000, ingreso: '2020-01-01', d13: 'acumula', d14: 'acumula', fr: 'acumula', gastosPersonales: 8000 };
+  let r = EC.calcular(Object.assign({ cargas: 0 }, base), {}, cfg, '2026-10');
+  assert.strictEqual(r.rentaDet.tope, 5752.6);
+  assert.strictEqual(r.rentaDet.rebaja, 1035.47);
+  assert.strictEqual(r.renta, 105.1);
+  // 2 cargas: tope 11 canastas = 9039.80, gasto permitido 8000 → rebaja 1440
+  r = EC.calcular(Object.assign({ cargas: 2 }, base), {}, cfg, '2026-10');
+  assert.strictEqual(r.rentaDet.rebaja, 1440);
+  assert.strictEqual(r.renta, 71.39);
+  // 7 cargas usa el último tramo (20 canastas)
+  assert.strictEqual(EC.topeGastos(7, cfg), 16436);
+  assert.strictEqual(EC.letras(918.68), 'NOVECIENTOS DIECIOCHO CON 68/100 DÓLARES');
+  assert.strictEqual(EC.letras(2138.2), 'DOS MIL CIENTO TREINTA Y OCHO CON 20/100 DÓLARES');
+  assert.strictEqual(EC.letras(21000), 'VEINTIÚN MIL CON 00/100 DÓLARES');
+  assert.strictEqual(EC.letras(1000000.5), 'UN MILLÓN CON 50/100 DÓLARES');
+  assert.strictEqual(EC.letras(100), 'CIEN CON 00/100 DÓLARES');
+  assert.strictEqual(EC.letras(0), 'CERO CON 00/100 DÓLARES');
+  assert.strictEqual(EC.letras(35.01), 'TREINTA Y CINCO CON 01/100 DÓLARES');
+}
+console.log('OK v4');

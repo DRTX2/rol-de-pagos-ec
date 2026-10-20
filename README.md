@@ -13,8 +13,9 @@ Sistema de rol de pagos parametrizable para Ecuador, con simulador de comprobant
 - **Cumplimiento y herramientas:** checklist legal con referencias, validador de cédula/RUC y de clave de acceso, calculadoras.
 - **Ajustes:** parámetros editables, respaldo JSON y borrado de datos por módulo o total (con deshacer).
 
-## Guía de validación
-Paso a paso con resultados esperados: [docs/GUIA-ROL-DE-PAGOS.md](docs/GUIA-ROL-DE-PAGOS.md).
+## Documentación
+- [Cómo funciona el rol de pagos](docs/COMO-FUNCIONA.md): campos, fórmulas, impuesto a la renta, liquidación, utilidades y comprobantes.
+- [Guía de validación](docs/GUIA-ROL-DE-PAGOS.md): paso a paso con resultados esperados.
 
 ## Probar
 ```

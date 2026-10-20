@@ -14,8 +14,11 @@
     iece: 0.5,
     fondosReserva: 8.33,
     iva: 15,
-    gastosFactor: 1.3, // tope de gastos personales = factor × fracción básica
-    rebajaGastos: 20, // % de rebaja sobre gastos personales
+    ver: 2, // versión de los parámetros legales (migra datos guardados con valores anteriores)
+    canasta: 821.8, // canasta familiar básica: base de los topes de gastos personales
+    canastas: [7, 9, 11, 14, 17, 20], // tope en canastas según cargas familiares: 0, 1, 2, 3, 4, 5 o más
+    rebajaGastos: 18, // % de rebaja del impuesto sobre el gasto permitido
+    topeIngresos: 50, // los gastos permitidos no superan este % de los ingresos
     regimenes: {
       ct: { nombre: 'Código del Trabajo (sector privado)', suplementaria: 50, extraordinaria: 100, nocturno: 25 },
       losep: { nombre: 'LOSEP (sector público)', suplementaria: 25, extraordinaria: 100, nocturno: 25 },
@@ -63,13 +66,20 @@
     const t = (cfg.irTabla || DEFAULTS.irTabla).find((x) => base >= x.desde && (x.hasta === null || base <= x.hasta));
     return t ? t.base + (base - t.desde) * (t.pct / 100) : 0;
   }
-  /** Retención mensual proyectada (método SRI: ingresos anualizados − IESS, tabla, rebaja por gastos personales). */
-  function retencionMensual(aportable, iessMes, gastosAnuales, cfg) {
+  /** Tope anual de gastos personales según cargas familiares (múltiplos de la canasta básica). */
+  function topeGastos(cargas, cfg) {
+    const c = cfg || DEFAULTS;
+    const i = Math.max(0, Math.min(c.canastas.length - 1, Math.floor(num(cargas))));
+    return r2(c.canastas[i] * c.canasta);
+  }
+  /** Retención mensual proyectada: ingresos anualizados − IESS → tabla → menos rebaja por gastos personales → ÷ 12. */
+  function retencionMensual(aportable, iessMes, gastosAnuales, cargas, cfg) {
     const base = Math.max(0, (aportable - iessMes) * 12);
-    const fb = (cfg.irTabla || DEFAULTS.irTabla)[0].hasta;
-    const rebaja = (cfg.rebajaGastos / 100) * Math.min(num(gastosAnuales), cfg.gastosFactor * fb);
-    const anual = Math.max(0, impuestoAnual(base, cfg) - rebaja);
-    return { base: r2(base), impuestoAnual: r2(impuestoAnual(base, cfg)), rebaja: r2(rebaja), mensual: r2(anual / 12) };
+    const tope = topeGastos(cargas, cfg);
+    const permitido = Math.min(num(gastosAnuales), tope, (cfg.topeIngresos / 100) * aportable * 12);
+    const rebaja = (cfg.rebajaGastos / 100) * permitido;
+    const imp = impuestoAnual(base, cfg);
+    return { base: r2(base), impuestoAnual: r2(imp), tope, permitido: r2(permitido), rebaja: r2(rebaja), mensual: r2(Math.max(0, imp - rebaja) / 12) };
   }
 
   /**
@@ -118,7 +128,7 @@
     const iessEmp = afiliado ? r2((aportable * cfg.iessPersonal) / 100) : 0;
     let renta, rentaDet = null;
     if (emp.rentaModo === 'manual') renta = r2(num(emp.renta));
-    else { rentaDet = retencionMensual(aportable, iessEmp, emp.gastosPersonales, cfg); renta = rentaDet.mensual; }
+    else { rentaDet = retencionMensual(aportable, iessEmp, emp.gastosPersonales, emp.cargas, cfg); renta = rentaDet.mensual; }
     const anticipo = r2(num(per.anticipo));
     const prestamos = r2(num(per.prestamos));
     const otrosDesc = r2(num(per.otrosDesc));
@@ -298,8 +308,35 @@
     return { subIva: r2(sub15), sub0: r2(sub0), subtotal: r2(subtotal), descuento: r2(descuento), iva: r2(iva), total: r2(subtotal + iva) };
   }
 
+  /* ---------- Número a letras (valor del rol) ---------- */
+  const U = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE', 'DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE', 'VEINTE', 'VEINTIUNO', 'VEINTIDÓS', 'VEINTITRÉS', 'VEINTICUATRO', 'VEINTICINCO', 'VEINTISÉIS', 'VEINTISIETE', 'VEINTIOCHO', 'VEINTINUEVE'];
+  const DE = ['', '', '', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+  const CE = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+  function menor1000(n) {
+    if (n === 100) return 'CIEN';
+    const c = Math.floor(n / 100), r = n % 100;
+    let s = c ? CE[c] + (r ? ' ' : '') : '';
+    if (r < 30) s += U[r]; else s += DE[Math.floor(r / 10)] + (r % 10 ? ' Y ' + U[r % 10] : '');
+    return s;
+  }
+  const apocope = (s) => s.replace(/VEINTIUNO$/, 'VEINTIÚN').replace(/UNO$/, 'UN');
+  function letras(valor) {
+    const v = Math.round((Math.abs(num(valor)) + Number.EPSILON) * 100) / 100;
+    const ent = Math.floor(v), cts = Math.round((v - ent) * 100);
+    let s = '';
+    if (ent === 0) s = 'CERO';
+    else {
+      const mill = Math.floor(ent / 1e6), miles = Math.floor((ent % 1e6) / 1000), r = ent % 1000;
+      if (mill) s += (mill === 1 ? 'UN MILLÓN' : apocope(menor1000(mill)) + ' MILLONES') + ' ';
+      if (miles) s += (miles === 1 ? 'MIL' : apocope(menor1000(miles)) + ' MIL') + ' ';
+      if (r) s += menor1000(r);
+      s = s.trim();
+    }
+    return `${s} CON ${String(cts).padStart(2, '0')}/100 DÓLARES`;
+  }
+
   const api = {
-    DEFAULTS, calcular, diasDefault, r2, mesesAntiguedad, impuestoAnual, retencionMensual, finiquito, utilidades, CAUSAS, d360,
+    DEFAULTS, calcular, diasDefault, topeGastos, letras, r2, mesesAntiguedad, impuestoAnual, retencionMensual, finiquito, utilidades, CAUSAS, d360,
     cedulaValida, validarRUC, claveAcceso, claveValida, totalesDoc, TIPO_DOC,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

@@ -11,6 +11,12 @@
   const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Parámetros legales guardados con una versión anterior se actualizan a los vigentes
+  const fixCfg = (c) => {
+    const d = EC.DEFAULTS, out = Object.assign({}, d, c || {});
+    if ((c || {}).ver !== d.ver) ['ver', 'rebajaGastos', 'canasta', 'canastas', 'topeIngresos', 'irTabla'].forEach((k) => { out[k] = JSON.parse(JSON.stringify(d[k])); });
+    return out;
+  };
   const hoy = new Date();
   const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
   const blank = () => ({
@@ -28,11 +34,11 @@
   let fresh = true;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) { fresh = false; const j = JSON.parse(raw); App.S = Object.assign(blank(), j, { cfg: Object.assign({}, EC.DEFAULTS, j.cfg) }); }
+    if (raw) { fresh = false; const j = JSON.parse(raw); App.S = Object.assign(blank(), j, { cfg: fixCfg(j.cfg) }); }
   } catch (e) { /* sin storage */ }
   App.fresh = fresh;
   App.save = () => { try { localStorage.setItem(KEY, JSON.stringify(App.S)); } catch (e) { /* ignorar */ } };
-  App.replace = (s) => { App.S = Object.assign(blank(), s, { cfg: Object.assign({}, EC.DEFAULTS, s.cfg) }); App.save(); };
+  App.replace = (s) => { App.S = Object.assign(blank(), s, { cfg: fixCfg(s.cfg) }); App.save(); };
 
   App.periodoLabel = (p) => { const [y, m] = p.split('-'); return `${MESES[+m - 1]} ${y}`; };
   App.shiftPeriodo = (p, d) => { const [y, m] = p.split('-').map(Number); const dt = new Date(y, m - 1 + d, 1); return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`; };
@@ -74,6 +80,7 @@
     send: 'M4 12l16-8-6 16-3-7z', edit: 'M4 20h4L19 9l-4-4L4 16zM13 7l4 4',
     truck: 'M3 6h11v10H3zM14 9h4l3 3v4h-7M7 19a2 2 0 100-4 2 2 0 000 4zM17 19a2 2 0 100-4 2 2 0 000 4z',
     menu: 'M4 7h16M4 12h16M4 17h16', undo: 'M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3',
+    chev: 'M6 9l6 6 6-6',
     search: 'M11 18a7 7 0 100-14 7 7 0 000 14zM21 21l-5-5', calc: 'M6 3h12v18H6zM9 7h6M9 12h1M14 12h1M9 16h1M14 16h1',
   };
   App.icon = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${P[n] || ''}"/></svg>`;
@@ -151,7 +158,10 @@
     a.href = URL.createObjectURL(new Blob([texto], { type: tipo })); a.download = nombre; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
-  App.print = (html) => { $('#printArea').innerHTML = html; window.print(); };
+  App.print = (html, orient = 'portrait') => { $('#printArea').innerHTML = `<style>@page{size:A4 ${orient};margin:10mm}</style>${html}`; window.print(); };
+  App.letras = EC.letras;
+  /** Ayuda contextual: ícono «?» con texto al pasar el mouse o enfocar. */
+  App.tip = (t) => `<button type="button" class="tip" data-tip="${esc(t)}" aria-label="${esc(t)}">?</button>`;
 
   /* ---------- Gráficos SVG ---------- */
   // Barras apiladas por mes. series: [{k, label, color}] ; data: [{label, vals:{k:n}}]
@@ -206,7 +216,10 @@
     $('#perLabel').onclick = () => $('#perPick').showPicker ? $('#perPick').showPicker() : $('#perPick').focus();
     $('#perPick').onchange = (e) => { if (e.target.value) { App.S.periodo = e.target.value; App.save(); App.render(); } };
     $('#demoClear').onclick = async () => { if (await App.confirm({ title: 'Empezar de cero', text: 'Se borran los datos de demostración para que ingreses los tuyos.', ok: 'Borrar demo', danger: true })) { App.replace(blank()); App.render(); } };
-    $('#dlg').addEventListener('click', (e) => { if (e.target === $('#dlg')) App.closeModal(); });
+    // Cerrar al hacer clic en el fondo, pero no cuando se suelta el mouse ahí tras seleccionar texto dentro del diálogo
+    let downEn = null;
+    $('#dlg').addEventListener('mousedown', (e) => { downEn = e.target; });
+    $('#dlg').addEventListener('click', (e) => { if (e.target === $('#dlg') && downEn === e.target) App.closeModal(); downEn = null; });
     const sync = () => { $('#perLabel').textContent = App.periodoLabel(App.S.periodo); $('#perPick').value = App.S.periodo; };
     const _r = App.render; App.render = () => { sync(); _r(); };
     App.render();

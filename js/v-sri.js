@@ -275,16 +275,18 @@
     const d = App.modal(`<h3>${c ? 'Editar' : 'Nuevo'} cliente</h3><form class="grid2" method="dialog"><label class="span2">Nombre o razón social<input id="n" required value="${esc(n.nombre)}"></label>
       <label>Tipo de identificación<select id="t">${Object.entries(IDTIPO).map(([k, t]) => `<option value="${k}" ${k === n.idTipo ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <label>Número<input id="i" value="${esc(n.ident)}" inputmode="numeric"><small id="im"></small></label><label class="span2">Dirección<input id="d" value="${esc(n.direccion)}"></label><label class="span2">Correo<input id="e" type="email" value="${esc(n.email)}"></label>
-      <div class="row end span2"><button class="btn" value="cancel" formnovalidate>Cancelar</button><button class="btn primary" value="ok">Guardar</button></div></form>`);
+      <div class="row end span2"><button class="btn" type="button" data-cancel>Cancelar</button><button class="btn primary" type="submit">Guardar</button></div></form>`);
     const chk = () => { const t = $('#t', d).value, v = $('#i', d).value; const ok = t === 'ruc' ? EC.validarRUC(v).valido : t === 'cedula' ? EC.cedulaValida(v) : true; $('#im', d).innerHTML = !v || t === 'final' || t === 'pasaporte' ? '' : ok ? '<span class="good">Válido</span>' : '<span class="bad">Dígito verificador inválido</span>'; };
     $('#i', d).oninput = chk; $('#t', d).onchange = () => { if ($('#t', d).value === 'final') $('#i', d).value = '9999999999999'; chk(); }; chk();
-    $('form', d).onsubmit = (ev) => { if (ev.submitter && ev.submitter.value === 'cancel') return; Object.assign(n, { nombre: $('#n', d).value.trim(), idTipo: $('#t', d).value, ident: $('#i', d).value.trim(), direccion: $('#d', d).value.trim(), email: $('#e', d).value.trim() }); if (!c) App.S.clientes.push(n); App.save(); App.render(); App.toast('Cliente guardado'); };
+    $('[data-cancel]', d).onclick = App.closeModal;
+    $('form', d).onsubmit = () => { Object.assign(n, { nombre: $('#n', d).value.trim(), idTipo: $('#t', d).value, ident: $('#i', d).value.trim(), direccion: $('#d', d).value.trim(), email: $('#e', d).value.trim() }); if (!c) App.S.clientes.push(n); App.save(); App.render(); App.toast('Cliente guardado'); };
   }
   function formProducto(p) {
     const n = p || { id: uid(), codigo: '', nombre: '', precio: 0, iva: App.S.cfg.iva };
     const d = App.modal(`<h3>${p ? 'Editar' : 'Nuevo'} producto</h3><form class="grid2" method="dialog"><label>Código<input id="c" required value="${esc(n.codigo)}"></label><label>Precio unitario (sin IVA)<input id="p" type="number" step="any" min="0" required value="${n.precio}"></label>
       <label class="span2">Nombre<input id="n" required value="${esc(n.nombre)}"></label><label>IVA<select id="v"><option value="0" ${+n.iva === 0 ? 'selected' : ''}>0%</option><option value="${App.S.cfg.iva}" ${+n.iva !== 0 ? 'selected' : ''}>${App.S.cfg.iva}%</option></select></label>
-      <div class="row end span2"><button class="btn" value="cancel" formnovalidate>Cancelar</button><button class="btn primary" value="ok">Guardar</button></div></form>`);
-    $('form', d).onsubmit = (ev) => { if (ev.submitter && ev.submitter.value === 'cancel') return; Object.assign(n, { codigo: $('#c', d).value.trim(), nombre: $('#n', d).value.trim(), precio: +$('#p', d).value, iva: +$('#v', d).value }); if (!p) App.S.productos.push(n); App.save(); App.render(); App.toast('Producto guardado'); };
+      <div class="row end span2"><button class="btn" type="button" data-cancel>Cancelar</button><button class="btn primary" type="submit">Guardar</button></div></form>`);
+    $('[data-cancel]', d).onclick = App.closeModal;
+    $('form', d).onsubmit = () => { Object.assign(n, { codigo: $('#c', d).value.trim(), nombre: $('#n', d).value.trim(), precio: +$('#p', d).value, iva: +$('#v', d).value }); if (!p) App.S.productos.push(n); App.save(); App.render(); App.toast('Producto guardado'); };
   }
 })();
