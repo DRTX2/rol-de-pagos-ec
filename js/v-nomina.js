@@ -14,7 +14,7 @@
     fr: [['mensualiza', 'Se paga cada mes en el rol'], ['acumula', 'Se deposita en el IESS (a pedido del trabajador)'], ['no', 'No aplica']],
   };
   const modoTag = (m) => ({ mensualiza: '<span class="tag">Mensual</span>', acumula: '<span class="tag warn">Acumula</span>', no: '<span class="tag mute">No aplica</span>' }[m || 'mensualiza']);
-  const regNombre = (e) => (App.S.cfg.regimenes[e.regimen] || {}).nombre || '';
+  const regNombre = (e) => (App.S.cfg.regimenes[App.S.cfg.regimenActivo] || {}).nombre || '';
 
   /* ---------- Tabla del SRI (se reutiliza en ficha, herramientas y ajustes) ---------- */
   App.irTableHTML = (base, cargas) => {
@@ -32,7 +32,7 @@
 
   /* ---------- Fórmula en palabras de cada línea del rol ---------- */
   function fxText(k, c, e) {
-    const cfg = App.S.cfg, reg = cfg.regimenes[e.regimen] || cfg.regimenes.ct, m = money, sal = m(+e.salario || 0);
+    const cfg = App.S.cfg, reg = cfg.regimenes[cfg.regimenActivo] || cfg.regimenes.ct, m = money, sal = m(+e.salario || 0);
     const rd = c.rentaDet;
     return ({
       sueldo: `${sal} ÷ ${cfg.diasMes} × ${c.dias} días`,
@@ -194,7 +194,7 @@
 
   /* ---------- Rol del mes ---------- */
   let modo = 'vivo', showFx = true;
-  const regTxt = (e, k) => { const r = App.S.cfg.regimenes[e.regimen] || App.S.cfg.regimenes.ct; return r[k]; };
+  const regTxt = (e, k) => { const r = App.S.cfg.regimenes[App.S.cfg.regimenActivo] || App.S.cfg.regimenes.ct; return r[k]; };
   const CAMPOS = [
     ['dias', 'Días trabajados', 0, 30, 1, () => 'Días del mes que trabajó (máximo 30). Si ingresó este mes, se calcula solo desde su fecha de ingreso.'],
     ['hSup', 'Horas suplementarias', 0, 60, 1, (e) => `Horas extra hasta las 24h00 en días laborables. Se pagan con ${regTxt(e, 'suplementaria')}% de recargo.`],
@@ -373,7 +373,6 @@
         ${lab('Nombre del cargo', '', '', `<input id="cargo" value="${esc(n.cargo)}" autocomplete="off">`)}
         ${lab('Cargo del catálogo', 'Busca y elige el cargo: fija comisión sectorial, nivel y salario mínimo. Se muestran por jerarquía (el jefe y, sangrados, sus dependientes). El catálogo se edita en Ajustes. «Otro» permite escribirlo a mano.', 'span2', `<div class="cs" id="cs"><input id="csq" type="search" placeholder="Buscar por cargo o nivel (A1, B1, C1…)" autocomplete="off"><input id="cargoId" type="hidden" value="${esc(n.cargoId || '')}"><div class="csl" id="csl" hidden></div></div>`)}</div></section>
       <section class="fs"><h4>Contrato</h4><div class="grid2">
-        ${lab('Régimen laboral', 'Código del Trabajo: empresa privada. LOSEP: sector público. Define los recargos de horas extras (editables en Ajustes).', '', sel('regimen', Object.entries(S.cfg.regimenes).map(([k, r]) => [k, r.nombre.split(' (')[0]]), n.regimen))}
         ${lab('Región', 'Fija la fecha del décimo cuarto: 15 de agosto en Sierra y Oriente, 15 de marzo en Costa y Galápagos.', '', sel('region', [['sierra', 'Sierra y Oriente'], ['costa', 'Costa y Galápagos']], n.region))}
         ${lab('Salario mensual (USD)', `El SBU ${S.cfg.anio} es ${money(S.cfg.sbu)}. Un salario menor genera una alerta pero igual se calcula.`, '', `<input id="salario" type="number" min="0" step="any" required value="${n.salario}">`)}
         ${lab('Fecha de ingreso', 'Prorratea los días del primer mes y define desde cuándo corresponden fondos de reserva (12 meses cumplidos).', '', `<input id="ingreso" type="date" value="${esc(n.ingreso)}">`)}</div></section>
@@ -425,7 +424,7 @@
       cid.dispatchEvent(new Event('change', { bubbles: true }));
     });
     csq.addEventListener('blur', cierra);
-    const read = () => Object.assign(n, { nombre: $('#nombre', d).value.trim(), cedula: ced.value.trim(), cargo: $('#cargo', d).value.trim(), regimen: $('#regimen', d).value, region: $('#region', d).value, salario: +$('#salario', d).value || 0, ingreso: $('#ingreso', d).value,
+    const read = () => Object.assign(n, { nombre: $('#nombre', d).value.trim(), cedula: ced.value.trim(), cargo: $('#cargo', d).value.trim(), region: $('#region', d).value, salario: +$('#salario', d).value || 0, ingreso: $('#ingreso', d).value,
       d13: $('#d13', d).value, d14: $('#d14', d).value, fr: $('#fr', d).value, cargas: +$('#cargas', d).value || 0, gastosPersonales: +$('#gastos', d).value || 0, rentaModo: $('#rm', d).value, renta: +$('#renta', d).value || 0, horasExtras: $('#he', d).checked, iess: $('#iess', d).checked, jornada: $('#jornada', d).value, comision: $('#comision', d).value, nivel: $('#nivel', d).value, cargoId: $('#cargoId', d).value });
     const row = (l, v, f, cls = '') => `<dt class="${cls}">${l}${f ? `<small>${f}</small>` : ''}</dt><dd class="${cls}">${v}</dd>`;
     const bd = (k, label, total, inner) => `<details class="bd" data-k="${k}" ${abiertos[k] ? 'open' : ''}><summary><span>${label}</span><b>${money(total)}</b>${icon('chev')}</summary><dl>${inner}</dl></details>`;
@@ -436,7 +435,7 @@
       const c = EC.calcular(n, {}, S.cfg, S.periodo), cfg = S.cfg;
       const jr = c.jornada, mn = c.minimo;
       $('#comision', d).disabled = $('#nivel', d).disabled = !!n.cargoId; // con cargo del catálogo, comisión y nivel salen del cargo
-      $('#jinfo', d).innerHTML = `<b>${jr.texto}</b> · ${jr.horasDia} h diarias · ${jr.horasSem} h semanales · valor hora ${money(c.valorHora)} (${money(n.salario)} ÷ ${c.horasMes} h)${jr.nocDia ? ` · ${jr.nocDia} h/día dentro del horario nocturno (recargo ${(S.cfg.regimenes[n.regimen] || S.cfg.regimenes.ct).nocturno}%)` : ''}<br>Salario mínimo aplicable: <b>${money(mn.valor)}</b> (${esc(mn.fuente)})`;
+      $('#jinfo', d).innerHTML = `<b>${jr.texto}</b> · ${jr.horasDia} h diarias · ${jr.horasSem} h semanales · valor hora ${money(c.valorHora)} (${money(n.salario)} ÷ ${c.horasMes} h)${jr.nocDia ? ` · ${jr.nocDia} h/día dentro del horario nocturno (recargo ${(S.cfg.regimenes[S.cfg.regimenActivo] || S.cfg.regimenes.ct).nocturno}%)` : ''}<br>Salario mínimo aplicable: <b>${money(mn.valor)}</b> (${esc(mn.fuente)})`;
       const ing = row('Sueldo', money(c.sueldo), `${money(n.salario)} ÷ ${cfg.diasMes} × ${c.dias} días`)
         + (c.d13Pago ? row('Décimo tercero', money(c.d13Pago), `${money(c.aportable)} ÷ 12`) : '') + (c.d14Pago ? row('Décimo cuarto', money(c.d14Pago), `SBU ${money(cfg.sbu)} ÷ 12`) : '')
         + (c.frPago ? row('Fondos de reserva', money(c.frPago), `${money(c.aportable)} × ${cfg.fondosReserva}%`) : '');

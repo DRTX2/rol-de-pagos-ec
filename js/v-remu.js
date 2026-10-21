@@ -22,7 +22,7 @@
   const COLS = (cfg) => [
     ['Denominación', 'l', (f) => f.e.cargo || f.e.nombre, 30, 'txt'],
     ['Empleado', 'l', (f) => f.e.nombre, 28, 'txt'],
-    ['Régimen laboral', 'l', (f) => (cfg.regimenes[f.e.regimen] || cfg.regimenes.ct).nombre.split(' (')[0], 20, 'txt'],
+    ['Régimen laboral', 'l', (f) => (cfg.regimenes[cfg.regimenActivo] || cfg.regimenes.ct).nombre.split(' (')[0], 20, 'txt'],
     ['Jornada de trabajo', 'l', (f) => f.jor.texto, 16, 'txt'],
     ['Comisión · nivel', 'l', (f) => (f.com ? `N.º ${f.com.id}${f.e.nivel ? ' · ' + f.e.nivel : ''}` : '–'), 14, 'txt'],
     ['Mínimo aplicable', 'n', (f) => f.mn.valor, 13, 'sum0'],

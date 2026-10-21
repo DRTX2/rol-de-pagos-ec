@@ -17,7 +17,7 @@
     const S = App.blank();
     S.demo = true;
     S.periodo = '2026-10';
-    S.empresa = { nombre: 'Andes Café Tostadores Cía. Ltda.', ruc: '1792210046001', direccion: 'Av. 6 de Diciembre N34-120 y Checoslovaquia, Quito', establecimiento: '001', punto: '001', ambiente: '1', regimen: 'General' };
+    S.empresa = { nombre: 'Global Security', ruc: '1792210046001', direccion: 'Av. 6 de Diciembre N34-120 y Checoslovaquia, Quito', establecimiento: '001', punto: '001', ambiente: '1', regimen: 'General' };
 
     const emp = (id, nombre, cedula, cargo, salario, ingreso, o = {}) => Object.assign({
       id, nombre, cedula, cargo, regimen: 'ct', salario, ingreso, region: 'sierra',

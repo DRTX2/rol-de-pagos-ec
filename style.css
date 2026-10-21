@@ -36,6 +36,7 @@ button, input, select { font: inherit; color: inherit; }
 .brand strong { font-family: var(--display); color: #fff; font-size: 1.1rem; display: block; line-height: 1.1; }
 .brand small { color: var(--side-mute); display: block; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sun { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffd98a, var(--sun) 55%, #d98e12); box-shadow: 0 0 0 5px rgba(244, 176, 60, .15); flex: none; }
+.logo { width: 44px; height: 44px; object-fit: contain; flex: none; background: #fff; border-radius: 10px; padding: 2px; }
 #nav .ng { margin: 14px 10px 4px; font-size: .78rem; color: var(--side-mute); font-weight: 600; }
 #nav a { display: flex; align-items: center; gap: 11px; padding: 9px 11px; color: var(--side-ink); border-radius: 10px; text-decoration: none; font-weight: 500; position: relative; transition: background .18s, color .18s; }
 #nav a:hover { background: rgba(255, 255, 255, .06); color: #fff; }

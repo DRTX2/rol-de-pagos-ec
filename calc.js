@@ -174,7 +174,7 @@
   function calcular(emp, per, cfg, periodo) {
     cfg = cfg || DEFAULTS;
     per = per || {};
-    const reg = cfg.regimenes[emp.regimen] || cfg.regimenes.ct;
+    const reg = cfg.regimenes[cfg.regimenActivo] || cfg.regimenes.ct;
     const avisos = [];
 
     const salario = num(emp.salario);
