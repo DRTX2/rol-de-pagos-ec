@@ -14,7 +14,8 @@
   // Parámetros legales guardados con una versión anterior se actualizan a los vigentes
   const fixCfg = (c) => {
     const d = EC.DEFAULTS, out = Object.assign({}, d, c || {});
-    if ((c || {}).ver !== d.ver) ['ver', 'rebajaGastos', 'canasta', 'canastas', 'topeIngresos', 'irTabla'].forEach((k) => { out[k] = JSON.parse(JSON.stringify(d[k])); });
+    Object.keys(d).forEach((k) => { if (!(c && k in c)) out[k] = JSON.parse(JSON.stringify(d[k])); }); // parámetros nuevos: copia propia, no la referencia compartida
+    if ((c || {}).ver !== d.ver) ['ver', 'secap', 'iece', 'cargos', 'comisiones', 'rebajaGastos', 'canasta', 'canastas', 'topeIngresos', 'irTabla'].forEach((k) => { out[k] = JSON.parse(JSON.stringify(d[k])); });
     out.regimenes = Object.assign({}, out.regimenes); delete out.regimenes.domestico;
     return out;
   };
@@ -24,7 +25,7 @@
     v: 2, demo: false,
     cfg: JSON.parse(JSON.stringify(EC.DEFAULTS)),
     empresa: { nombre: '', ruc: '', direccion: '', establecimiento: '001', punto: '001', ambiente: '1', regimen: 'General' },
-    areas: [], cargos: [], cierre: {},
+    cierre: {},
     empleados: [], periodos: {}, checks: {},
     clientes: [], productos: [], docs: [], seq: {},
     finiquitos: [], utilidades: { valor: 0, anio: hoy.getFullYear() - 1 },
@@ -42,8 +43,6 @@
   App.save = () => { try { localStorage.setItem(KEY, JSON.stringify(App.S)); } catch (e) { /* ignorar */ } };
   App.replace = (s) => { App.S = Object.assign(blank(), s, { cfg: fixCfg(s.cfg) }); App.save(); };
 
-  /** Área de un empleado según su cargo del catálogo ('' si no tiene). */
-  App.areaDe = (e) => { const c = App.S.cargos.find((x) => x.id === e.cargoId), a = c && App.S.areas.find((x) => x.id === c.areaId); return a ? a.nombre : ''; };
   /** Marca una etapa del mes como hecha (guía de pasos del Resumen). */
   App.marcar = (k) => { App.S.cierre[`${App.S.periodo}:${k}`] = true; App.save(); };
   App.periodoLabel = (p) => { const [y, m] = p.split('-'); return `${MESES[+m - 1]} ${y}`; };
@@ -140,7 +139,6 @@
     comprobantes: { nombre: 'Comprobantes SRI (simulador)', desc: 'Facturas, notas, guías y retenciones emitidas', count: (S) => S.docs.length, clear: (S) => { S.docs = []; S.seq = {}; } },
     catalogo: { nombre: 'Clientes y productos', desc: 'Catálogo usado al emitir comprobantes', count: (S) => S.clientes.length + S.productos.length, clear: (S) => { S.clientes = []; S.productos = []; } },
     checklist: { nombre: 'Checklist de cumplimiento', desc: 'Casillas marcadas', count: (S) => Object.values(S.checks).filter(Boolean).length, clear: (S) => { S.checks = {}; } },
-    cargos: { nombre: 'Cargos y áreas', desc: 'Catálogo de áreas y cargos de la empresa', count: (S) => S.areas.length + S.cargos.length, clear: (S) => { S.areas = []; S.cargos = []; S.empleados.forEach((e) => { e.cargoId = ''; }); } },
     empresa: { nombre: 'Datos de la empresa', desc: 'Razón social, RUC, establecimiento', count: (S) => (S.empresa.nombre ? 1 : 0), clear: (S) => { S.empresa = blank().empresa; } },
     params: { nombre: 'Parámetros legales', desc: 'Restaura SBU, tasas, recargos y tabla de renta', count: () => 0, clear: (S) => { S.cfg = JSON.parse(JSON.stringify(EC.DEFAULTS)); } },
   };
@@ -190,7 +188,7 @@
 
   /* ---------- Shell ---------- */
   const NAV = [
-    ['Nómina', [['resumen', 'dash', 'Resumen'], ['ajustes', 'cog', 'Configuración'], ['empleados', 'users', 'Empleados'], ['rol', 'rol', 'Rol de pagos'], ['liquidaciones', 'exit', 'Liquidaciones']]],
+    ['Nómina', [['resumen', 'dash', 'Resumen'], ['ajustes', 'cog', 'Configuración'], ['empleados', 'users', 'Empleados'], ['rol', 'rol', 'Rol de pagos'], ['remuneraciones', 'calc', 'Remuneraciones'], ['liquidaciones', 'exit', 'Liquidaciones']]],
     ['Facturación', [['comprobantes', 'doc', 'Comprobantes'], ['catalogo', 'cart', 'Clientes y productos']]],
     ['Normativa', [['legal', 'shield', 'Cumplimiento'], ['herramientas', 'tool', 'Herramientas']]],
   ];

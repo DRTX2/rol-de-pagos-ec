@@ -10,11 +10,11 @@
     diasMes: 30,
     iessPersonal: 9.45,
     iessPatronal: 11.15,
-    secap: 0.5,
-    iece: 0.5,
+    secap: 0, // sin SECAP ni IECE: la planilla es solo aporte personal y patronal. Se pueden reactivar en Ajustes.
+    iece: 0,
     fondosReserva: 8.33,
     iva: 15,
-    ver: 3, // versión de los parámetros legales (migra datos guardados con valores anteriores)
+    ver: 4, // versión de los parámetros legales (migra datos guardados con valores anteriores)
     canasta: 821.8, // canasta familiar básica: base de los topes de gastos personales
     canastas: 7, // tope de gastos personales en canastas (sin cargas familiares: se usa el tramo base)
     rebajaGastos: 18, // % de rebaja del impuesto sobre el gasto permitido
@@ -23,6 +23,40 @@
       ct: { nombre: 'Código del Trabajo (sector privado)', suplementaria: 50, extraordinaria: 100, nocturno: 25 },
       losep: { nombre: 'LOSEP (sector público)', suplementaria: 25, extraordinaria: 100, nocturno: 25 },
     },
+    // Jornada de trabajo: tope legal (Código del Trabajo art. 47, 55 y 62) y ventana del recargo nocturno. Todo editable.
+    jornadaMax: { diaria: 8, semanal: 40, extraDia: 4, extraSemana: 12 },
+    nocturnoIni: '19:00',
+    nocturnoFin: '06:00',
+    // Jornadas disponibles para asignar a cada empleado (horario de entrada y salida, horas de almuerzo y días por semana)
+    jornadas: [
+      { id: 'completa', nombre: 'Completa lunes a viernes', ini: '08:00', fin: '17:00', almuerzo: 1, diasSem: 5 },
+      { id: 'parcial', nombre: 'Parcial de 4 horas', ini: '08:00', fin: '12:00', almuerzo: 0, diasSem: 5 },
+      { id: 'nocturna', nombre: 'Nocturna', ini: '22:00', fin: '06:00', almuerzo: 0, diasSem: 5 },
+    ],
+    // Estructura ocupacional (Acuerdo MDT 370): A jefatura, B supervisión, C operación, D asistencia, E soporte
+    niveles: [
+      { id: 'A1', nombre: 'Jefatura' }, { id: 'B1', nombre: 'Supervisión general' }, { id: 'B2', nombre: 'Supervisión técnica' }, { id: 'B3', nombre: 'Supervisión operativa' },
+      { id: 'C1', nombre: 'Operación especializada' }, { id: 'C2', nombre: 'Operación técnica' }, { id: 'C3', nombre: 'Operación básica' },
+      { id: 'D1', nombre: 'Asistencia administrativa' }, { id: 'D2', nombre: 'Asistencia técnica' }, { id: 'E1', nombre: 'Soporte administrativo' }, { id: 'E2', nombre: 'Soporte operativo' },
+    ],
+    // Comisiones sectoriales pertinentes: solo la N.º 12 (Tecnología: hardware y software). «min» es el salario mínimo por nivel,
+    // escala de las ramas 1 a 3 del Anexo CS 12 de los salarios mínimos sectoriales 2025 (vigente en 2026 según el oficio
+    // MDT-PRE-2026-002577). E1 no tiene valor en esa escala. Se pueden agregar más comisiones en Ajustes.
+    comisiones: [
+      { id: 12, nombre: "Tecnología: hardware y software (incluye TIC's)", fuente: 'Anexo CS 12, salarios mínimos sectoriales 2025',
+        min: { A1: 507.37, B1: 506.67, B2: 505.97, B3: 505.26, C1: 504.56, C2: 502.68, C3: 500.80, D1: 498.93, D2: 497.05, E2: 493.29 } },
+    ],
+    // Cargos de la empresa (organigrama de Global Security, comisión 12 «Tecnología»). «padre» es el cargo del que depende. Editable.
+    // El mínimo es el del nivel en el Anexo 1 del MDT 2025 (vigente en 2026); lo que quede bajo el SBU se iguala al SBU.
+    cargos: [
+      { id: 'gerente', nombre: 'Gerente general', nivel: 'A1', padre: '', minimo: 507.37 },
+      { id: 'jefe-tec', nombre: 'Jefe técnico de ciberseguridad', nivel: 'B1', padre: 'gerente', minimo: 506.67 },
+      { id: 'contador', nombre: 'Contador general', nivel: 'C1', padre: 'gerente', minimo: 504.56 },
+      { id: 'asistente', nombre: 'Asistente administrativo-comercial', nivel: 'E2', padre: 'gerente', minimo: 493.29 },
+      { id: 'analista', nombre: 'Analista de ciberseguridad 1', nivel: 'C1', padre: 'jefe-tec', minimo: 504.56 },
+      { id: 'dev1', nombre: 'Desarrollador 1 (semi senior)', nivel: 'C1', padre: 'jefe-tec', minimo: 504.56 },
+      { id: 'dev2', nombre: 'Desarrollador 2 (junior)', nivel: 'C3', padre: 'jefe-tec', minimo: 500.80 },
+    ].map((c) => Object.assign(c, { comision: 12 })),
     // Tabla IR personas naturales 2026 (Res. NAC-DGERCGC25-00000043). Editable.
     irTabla: [
       { desde: 0, hasta: 12208, base: 0, pct: 0 },
@@ -60,6 +94,57 @@
     return cfg.diasMes;
   }
 
+  const minutos = (hhmm) => { const [h, m] = String(hhmm || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+  /** Jornada del empleado: horario, horas diarias y semanales, y horas diarias dentro de la ventana nocturna. */
+  function jornadaDe(emp, cfg) {
+    cfg = cfg || DEFAULTS;
+    const lista = cfg.jornadas || DEFAULTS.jornadas;
+    const j = lista.find((x) => x.id === emp.jornada) || lista[0];
+    if (!j) return { id: '', nombre: '', ini: '', fin: '', almuerzo: 0, diasSem: 5, horasDia: cfg.horasMes / cfg.diasMes, horasSem: 0, horasMes: cfg.horasMes, nocDia: 0, texto: '' };
+    const a = minutos(j.ini);
+    let b = minutos(j.fin); if (b <= a) b += 1440; // turno que cruza la medianoche
+    const horasDia = Math.max(0, (b - a) / 60 - num(j.almuerzo));
+    const ni = minutos(cfg.nocturnoIni || '19:00'); let nf = minutos(cfg.nocturnoFin || '06:00'); if (nf <= ni) nf += 1440;
+    let noc = 0;
+    for (let k = -1; k <= 1; k++) noc += Math.max(0, Math.min(b, nf + 1440 * k) - Math.max(a, ni + 1440 * k));
+    const hh = (m) => `${String(Math.floor((m % 1440) / 60)).padStart(2, '0')}H${String(m % 60).padStart(2, '0')}`;
+    return {
+      id: j.id, nombre: j.nombre, ini: j.ini, fin: j.fin, almuerzo: num(j.almuerzo), diasSem: num(j.diasSem),
+      horasDia: r2(horasDia), horasSem: r2(horasDia * num(j.diasSem)), horasMes: r2(horasDia * cfg.diasMes),
+      nocDia: r2(Math.min(noc / 60, horasDia)), texto: `${hh(a)} A ${hh(b)}`,
+    };
+  }
+
+  /** Salario mínimo aplicable: el de la comisión sectorial y nivel del empleado; si no hay, el SBU.
+   *  Si el nivel exacto no está cargado se usa el menor valor cargado de la comisión como piso. */
+  function salarioMinimo(emp, cfg) {
+    cfg = cfg || DEFAULTS;
+    const r = minimoBase(emp, cfg);
+    // MDT-PRE-2026-002577: todo mínimo sectorial por debajo del SBU se iguala al SBU
+    return r.valor < cfg.sbu ? Object.assign({}, r, { valor: cfg.sbu, fuente: `${r.fuente}; igualado al SBU` }) : r;
+  }
+  function minimoBase(emp, cfg) {
+    const cargo = emp.cargoId ? (cfg.cargos || []).find((x) => x.id === emp.cargoId) : null;
+    if (cargo && num(cargo.minimo) > 0) return { valor: num(cargo.minimo), fuente: `cargo «${cargo.nombre}»`, sectorial: true, exacto: true };
+    const com = emp.comision ? (cfg.comisiones || []).find((x) => String(x.id) === String(emp.comision)) : null;
+    if (!com) return { valor: cfg.sbu, fuente: 'SBU', sectorial: false };
+    const cargados = Object.values(com.min || {}).map(num).filter((x) => x > 0);
+    const exacto = emp.nivel && num((com.min || {})[emp.nivel]);
+    if (exacto > 0) return { valor: exacto, fuente: `comisión N.º ${com.id}, nivel ${emp.nivel}`, sectorial: true, exacto: true };
+    if (cargados.length) return { valor: Math.min(...cargados), fuente: `comisión N.º ${com.id} (piso: falta cargar el nivel ${emp.nivel || 'sin asignar'})`, sectorial: true, exacto: false };
+    return { valor: cfg.sbu, fuente: `SBU (la comisión N.º ${com.id} no tiene mínimos cargados)`, sectorial: false };
+  }
+
+  /** Cargos en orden de organigrama (el jefe y debajo sus dependientes), con su profundidad para sangrar. */
+  function cargosOrden(cfg) {
+    const lista = (cfg || DEFAULTS).cargos || [], ids = new Set(lista.map((c) => c.id)), out = [], vistos = new Set();
+    const rec = (padre, depth) => lista.filter((c) => (padre === '' ? !c.padre || !ids.has(c.padre) : c.padre === padre)).forEach((c) => {
+      if (vistos.has(c.id)) return; vistos.add(c.id); out.push({ cargo: c, depth }); rec(c.id, depth + 1); });
+    rec('', 0);
+    lista.forEach((c) => { if (!vistos.has(c.id)) out.push({ cargo: c, depth: 0 }); }); // ciclos o datos raros: no se pierde ninguno
+    return out;
+  }
+
   /** Impuesto anual según tabla progresiva. */
   function impuestoAnual(base, cfg) {
     const t = (cfg.irTabla || DEFAULTS.irTabla).find((x) => base >= x.desde && (x.hasta === null || base <= x.hasta));
@@ -87,12 +172,16 @@
   function calcular(emp, per, cfg, periodo) {
     cfg = cfg || DEFAULTS;
     per = per || {};
-    const reg = cfg.regimenes[emp.regimen] || cfg.regimenes.ct;
+    const reg = cfg.regimenes[cfg.regimenActivo] || cfg.regimenes.ct;
     const avisos = [];
 
     const salario = num(emp.salario);
     const dias = Math.min(cfg.diasMes, Math.max(0, per.dias === undefined || per.dias === '' ? diasDefault(emp, periodo, cfg) : num(per.dias)));
-    const valorHora = salario / cfg.horasMes;
+    const jor = jornadaDe(emp, cfg);
+    // Con jornada asignada: horas del mes = horas diarias × días del mes (8 h × 30 = 240). Sin jornada válida, el parámetro general.
+    const horasMes = jor.horasMes > 0 ? jor.horasMes : cfg.horasMes;
+    const valorHora = salario / horasMes;
+    const minimo = salarioMinimo(emp, cfg);
 
     const sueldo = r2((salario / cfg.diasMes) * dias);
     const heOn = emp.horasExtras !== false;
@@ -143,15 +232,20 @@
     const provVac = r2(aportable / 24);
     const costoEmpleador = r2(totalIngresos + patronal + secap + iece + prov13 + prov14 + provFR + provVac);
 
+    const jm = cfg.jornadaMax || DEFAULTS.jornadaMax;
     if (salario > 0 && salario < cfg.sbu) avisos.push(`Salario menor al SBU (${cfg.sbu}).`);
-    if (hSup + hExt > 48) avisos.push('Más de 48 h extra al mes: revisa el tope (4 h/día, 12 h/semana).');
+    else if (salario > 0 && minimo.sectorial && salario < minimo.valor) avisos.push(`Salario menor al mínimo sectorial ${minimo.valor} (${minimo.fuente}).`);
+    if (emp.comision && minimo.sectorial && !minimo.exacto) avisos.push(`No hay mínimo cargado para el nivel ${emp.nivel || '(sin asignar)'} de la comisión N.º ${emp.comision}: se usa el piso ${minimo.valor}. Complétalo en Ajustes.`);
+    if (jor.horasDia > jm.diaria) avisos.push(`La jornada de ${jor.horasDia} h diarias supera el máximo legal de ${jm.diaria} h.`);
+    if (jor.horasSem > jm.semanal) avisos.push(`La jornada de ${jor.horasSem} h semanales supera el máximo legal de ${jm.semanal} h.`);
+    if (hSup + hExt > jm.extraSemana * 4) avisos.push(`Más de ${jm.extraSemana * 4} h extra al mes: revisa el tope (${jm.extraDia} h/día, ${jm.extraSemana} h/semana).`);
     if (!heOn && (num(per.hSup) || num(per.hExt) || num(per.hNoc))) avisos.push('Sin horas extras habilitadas: se ignoraron las horas.');
     if (fr !== 'no' && !frAplica) avisos.push('Fondos de reserva: aún no cumple 1 año, no se calcula.');
     if (num(per.dias) > cfg.diasMes) avisos.push(`Días mayores a ${cfg.diasMes}: se ajustó.`);
     if (totalEgresos > totalIngresos) avisos.push('Egresos superan ingresos: neto negativo.');
 
     return {
-      dias, valorHora: r2(valorHora), sueldo, hSup, hExt, hNoc, pagoSup, pagoExt, pagoNoc, horasExtras, bonos, otrosIng,
+      dias, valorHora: r2(valorHora), horasMes, jornada: jor, minimo, sueldo, hSup, hExt, hNoc, pagoSup, pagoExt, pagoNoc, horasExtras, bonos, otrosIng,
       aportable, d13Base, d14Base, frBase, d13Pago, d14Pago, frPago, totalIngresos,
       iessEmp, renta, rentaDet, anticipo, prestamos, otrosDesc, totalEgresos, neto,
       patronal, secap, iece, prov13, prov14, provFR, provVac, costoEmpleador,
@@ -325,7 +419,7 @@
   }
 
   const api = {
-    DEFAULTS, calcular, diasDefault, topeGastos, letras, r2, mesesAntiguedad, impuestoAnual, retencionMensual, finiquito, utilidades, CAUSAS, d360,
+    DEFAULTS, calcular, jornadaDe, cargosOrden, salarioMinimo, diasDefault, topeGastos, letras, r2, mesesAntiguedad, impuestoAnual, retencionMensual, finiquito, utilidades, CAUSAS, d360,
     cedulaValida, validarRUC, claveAcceso, claveValida, totalesDoc, TIPO_DOC,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

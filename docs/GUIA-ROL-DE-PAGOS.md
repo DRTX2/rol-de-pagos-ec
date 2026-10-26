@@ -4,7 +4,7 @@
 
 Cada paso trae el resultado esperado, calculado a mano y verificado con `node test.js` y con una prueba automática de la interfaz. Si tu pantalla muestra otra cifra, hay un error.
 
-Parámetros usados (Configuración → Parámetros legales): SBU $482 · IESS personal 9,45% · patronal 11,15% · SECAP 0,5% · IECE 0,5% · fondos de reserva 8,33% · 240 horas al mes · 30 días.
+Parámetros usados (Configuración → Parámetros legales): SBU $482 · IESS personal 9,45% · patronal 11,15% · sin SECAP ni IECE (parámetros en 0) · fondos de reserva 8,33% · 240 horas al mes · 30 días.
 
 ## 0. Preparación
 1. Abre https://drtx2.github.io/rol-de-pagos-ec/ (o `python3 -m http.server` y entra a `localhost:8000`).
@@ -13,7 +13,7 @@ Parámetros usados (Configuración → Parámetros legales): SBU $482 · IESS pe
 
 ## 1. Configuración y empleado
 1. **Configuración → Empresa:** razón social y RUC (por ejemplo `1792210046001`).
-2. **Configuración → Cargos y áreas:** crea el área «Ventas» y el cargo «Vendedor» dentro de ella.
+2. **Configuración → Parámetros legales → Cargos:** revisa el catálogo de cargos (o agrega «Vendedor»).
 3. **Empleados → Nuevo empleado:**
 | Campo | Valor |
 |---|---|
@@ -66,7 +66,7 @@ Selecciona a Juan en la lista de la izquierda y escribe (puedes mover el slider 
 | Anticipo + préstamos + otros | 100 + 30 + 5 | $135.00 |
 | **Total egresos** | | **$222.57** |
 
-**Neto a recibir: $918.68.** En «Aportes y provisiones de la empresa»: patronal $103.32, SECAP+IECE $9.26, provisión de vacaciones $38.61, costo total **$1,292.44**.
+**Neto a recibir: $918.68.** En «Aportes y provisiones de la empresa»: patronal $103.32, aporte personal $87.57 (informativo: ya está dentro de los ingresos), provisión de vacaciones $38.61, costo total **$1,283.18**.
 
 ## 4. Pruebas de que no hay límites
 1. **Decimales:** en horas suplementarias escribe `75.5`. El slider amplía su máximo, el número se queda en 75.5 y aparece el aviso de más de 48 horas extra (es un aviso, no un bloqueo).

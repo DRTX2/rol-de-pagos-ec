@@ -3,19 +3,26 @@
   'use strict';
   const App = window.App, EC = App.EC;
 
+  /** Reproduce la hoja «Remuneraciones UBIKAR»: gerente $2034 y administrador/contador $1212, Código de Trabajo, 08H00 a 17H00, todo mensualizado. */
+  App.seedUbikar = () => {
+    const S = App.blank();
+    S.empresa = Object.assign(S.empresa, { nombre: 'UBIKAR' });
+    const emp = (id, cargo, salario) => ({ id, nombre: cargo, cedula: '', cargo, regimen: 'ct', salario, ingreso: '2020-01-01', region: 'sierra', d13: 'mensualiza', d14: 'mensualiza', fr: 'mensualiza', horasExtras: false, iess: true, rentaModo: 'auto', renta: 0, gastosPersonales: 0, jornada: 'completa', comision: '', nivel: '', cargoId: '' });
+    S.empleados = [emp('u1', 'GERENTE', 2034), emp('u2', 'ADMINISTRADOR/CONTADOR', 1212)];
+    S.periodo = App.S.periodo;
+    App.replace(S);
+  };
+
   App.seedDemo = () => {
     const S = App.blank();
     S.demo = true;
     S.periodo = '2026-10';
-    S.empresa = { nombre: 'Andes Café Tostadores Cía. Ltda.', ruc: '1792210046001', direccion: 'Av. 6 de Diciembre N34-120 y Checoslovaquia, Quito', establecimiento: '001', punto: '001', ambiente: '1', regimen: 'General' };
+    S.empresa = { nombre: 'Global Security', ruc: '1792210046001', direccion: 'Av. 6 de Diciembre N34-120 y Checoslovaquia, Quito', establecimiento: '001', punto: '001', ambiente: '1', regimen: 'General' };
 
-    S.areas = [['a1', 'Administración'], ['a2', 'Producción'], ['a3', 'Ventas'], ['a4', 'Logística']].map(([id, nombre]) => ({ id, nombre }));
-    S.cargos = [['Gerente general', 'a1'], ['Contador', 'a1'], ['Jefa de producción', 'a2'], ['Tostador maestro', 'a2'], ['Barista y atención', 'a3'], ['Ejecutivo de ventas', 'a3'], ['Bodeguero', 'a4'], ['Repartidora', 'a4'], ['Auxiliar de bodega', 'a4']]
-      .map(([nombre, areaId], i) => ({ id: `g${i + 1}`, nombre, areaId }));
     const emp = (id, nombre, cedula, cargo, salario, ingreso, o = {}) => Object.assign({
-      id, nombre, cedula, cargo, cargoId: (S.cargos.find((c) => c.nombre === cargo) || {}).id || '', regimen: 'ct', salario, ingreso, region: 'sierra',
+      id, nombre, cedula, cargo, regimen: 'ct', salario, ingreso, region: 'sierra',
       d13: 'mensualiza', d14: 'mensualiza', fr: 'mensualiza', horasExtras: true, iess: true,
-      rentaModo: 'auto', renta: 0, gastosPersonales: 0,
+      rentaModo: 'auto', renta: 0, gastosPersonales: 0, jornada: 'completa', comision: '', nivel: '', cargoId: '',
     }, o);
     S.empleados = [
       emp('e1', 'Valeria Andrade Proaño', '1704821139', 'Gerente general', 2400, '2019-03-04', { d13: 'acumula', d14: 'acumula', fr: 'acumula', horasExtras: false, gastosPersonales: 7200 }),
