@@ -65,21 +65,20 @@
     const filas = () => S.empleados.map((e) => {
       const ini = e.ingreso > `${u.anio}-01-01` ? e.ingreso : `${u.anio}-01-01`;
       const dias = e.ingreso > `${u.anio}-12-31` ? 0 : Math.min(360, EC.d360(ini, `${u.anio}-12-31`));
-      return { id: e.id, dias, cargas: +e.cargas || 0 };
+      return { id: e.id, dias };
     });
-    host.innerHTML = `<div class="cols2 start"><section class="card"><h2>Utilidad del ejercicio</h2><p class="sub">El 15% de la utilidad líquida se reparte: 10% por días trabajados y 5% por cargas familiares.</p><div class="grid2">
+    host.innerHTML = `<div class="cols2 start"><section class="card"><h2>Utilidad del ejercicio</h2><p class="sub">El 15% de la utilidad líquida se reparte entre los empleados según los días trabajados en el año.</p><div class="grid2">
       <label>Ejercicio fiscal<input type="number" id="anio" value="${u.anio}" step="any"></label><label>Utilidad líquida (USD)<span class="cur"><i>$</i><input type="number" id="val" min="0" step="any" value="${u.valor}"></span></label></div>
-      <div class="split big" id="sp"></div><ul class="legend inline" id="lg"></ul></section><section class="card sticky"><h2>Resumen</h2><dl class="rows" id="rs"></dl><p class="hint">Las cargas familiares y los días se toman de la ficha de cada empleado. La ley fija topes por salario digno; confirma con tu contador.</p></section></div>
+      <div class="split big" id="sp"></div><ul class="legend inline" id="lg"></ul></section><section class="card sticky"><h2>Resumen</h2><dl class="rows" id="rs"></dl><p class="hint">Los días se calculan desde la fecha de ingreso de cada empleado. La ley fija topes por salario digno; confirma con tu contador.</p></section></div>
       <section class="card"><h2>Reparto por empleado</h2><div class="tablewrap flat"><table class="list" id="tt"></table></div></section>`;
     const draw = () => {
       const f = filas(), r = EC.utilidades(u.valor, f, S.cfg);
-      $('#rs', host).innerHTML = `<dt>Utilidad líquida</dt><dd data-v="${u.valor}">$0.00</dd><dt>15% a repartir</dt><dd class="tot" data-v="${r.total}">$0.00</dd><dt>10% por días trabajados</dt><dd data-v="${r.p10}">$0.00</dd><dt>5% por cargas familiares</dt><dd data-v="${r.p5}">$0.00</dd>`;
+      $('#rs', host).innerHTML = `<dt>Utilidad líquida</dt><dd data-v="${u.valor}">$0.00</dd><dt>15% a repartir</dt><dd class="tot" data-v="${r.total}">$0.00</dd>`;
       $$('#rs [data-v]', host).forEach((d) => App.setNum(d, +d.dataset.v));
-      const tot = r.total || 1; $('#sp', host).innerHTML = `<i style="width:${(r.p10 / tot) * 100}%;background:var(--c-neto)"></i><i style="width:${(r.p5 / tot) * 100}%;background:var(--c-pat)"></i>`;
-      $('#lg', host).innerHTML = `<li><i style="background:var(--c-neto)"></i>Por días <b>${money(r.p10)}</b></li><li><i style="background:var(--c-pat)"></i>Por cargas <b>${money(r.p5)}</b></li>`;
-      $('#tt', host).innerHTML = `<thead><tr><th class="l">Empleado</th><th>Días</th><th>Cargas</th><th>Por días</th><th>Por cargas</th><th>Total</th></tr></thead><tbody>${r.filas.map((x) => { const e = S.empleados.find((y) => y.id === x.id); const ff = f.find((y) => y.id === x.id);
-        return `<tr><td class="l"><b>${esc(e.nombre)}</b></td><td>${ff.dias}</td><td>${ff.cargas}</td><td>${money(x.porDias)}</td><td>${money(x.porCargas)}</td><td><b>${money(x.total)}</b></td></tr>`; }).join('') || '<tr><td colspan="6" class="empty">Sin empleados</td></tr>'}</tbody>`;
-      if (r.sinCargas) $('#rs', host).insertAdjacentHTML('beforeend', `<dt>Sin cargas registradas</dt><dd>${money(r.sinCargas)} sin repartir</dd>`);
+      $('#sp', host).innerHTML = '<i style="width:100%;background:var(--c-neto)"></i>';
+      $('#lg', host).innerHTML = `<li><i style="background:var(--c-neto)"></i>Por días trabajados <b>${money(r.total)}</b></li>`;
+      $('#tt', host).innerHTML = `<thead><tr><th class="l">Empleado</th><th>Días</th><th>Utilidad</th></tr></thead><tbody>${r.filas.map((x) => { const e = S.empleados.find((y) => y.id === x.id); const ff = f.find((y) => y.id === x.id);
+        return `<tr><td class="l"><b>${esc(e.nombre)}</b></td><td>${ff.dias}</td><td><b>${money(x.total)}</b></td></tr>`; }).join('') || '<tr><td colspan="3" class="empty">Sin empleados</td></tr>'}</tbody>`;
     };
     $('#anio', host).oninput = (e) => { u.anio = +e.target.value; App.save(); draw(); };
     $('#val', host).oninput = (e) => { u.valor = +e.target.value; App.save(); draw(); };

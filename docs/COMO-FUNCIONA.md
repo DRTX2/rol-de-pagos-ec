@@ -30,29 +30,31 @@ Aplicación web sin servidor: todo se calcula en el navegador y los datos se gua
 | Comprobantes, Clientes y productos | Simulador de factura, notas, guía de remisión y retención |
 | Cumplimiento | Lista de obligaciones laborales y tributarias con su base legal |
 | Herramientas | Validador de cédula, RUC y clave de acceso; calculadoras de horas extra y renta |
-| Ajustes y datos | Empresa, parámetros legales, respaldo y borrado por módulo |
+| Configuración | Empresa, cargos y áreas, parámetros legales, respaldo y borrado por módulo |
 
-## 2. Flujo de trabajo del mes
+## 2. Flujo de trabajo
 
-1. **Una sola vez:** en Ajustes → Empresa escribe razón social y RUC. En Empleados crea una ficha por trabajador.
-2. **Cada mes:** elige el periodo arriba y abre **Rol de pagos**.
-3. Para cada empleado ingresa lo que cambió ese mes: días, horas extras, bonos, anticipos, préstamos, descuentos. Si no cambió nada, no escribas nada.
-4. Revisa los avisos (sueldo bajo el SBU, demasiadas horas extra, neto negativo).
-5. Imprime los roles para firma y el consolidado para contabilidad, o exporta a Excel.
-6. «Copiar mes anterior» repite las novedades del mes pasado.
+El Resumen muestra una guía de 4 pasos que se marcan solos:
+
+1. **Configura la empresa** (Configuración): razón social, RUC válido y el catálogo de **áreas** (Administración, Ventas…) y **cargos** (cada cargo pertenece a un área).
+2. **Agrega a tus empleados** (Empleados): una ficha por trabajador; el cargo se elige del catálogo y el área se asigna sola.
+3. **Carga las novedades del mes** (Rol de pagos): elige el periodo arriba e ingresa lo que cambió: días, horas extras, bonos, anticipos, préstamos y descuentos. Si no cambió nada, no escribas nada. Revisa los avisos.
+4. **Imprime o exporta**: rol firmado por cada trabajador, consolidado y Excel.
+
+Pasos 1 y 2 se hacen una vez; 3 y 4 se repiten cada mes («Copiar mes anterior» repite las novedades). Aparte del mes: décimos (diciembre y agosto/marzo), utilidades (abril) y liquidaciones al terminar un contrato.
 
 ## 3. Ficha del empleado
 
 | Campo | Qué es | Efecto en el cálculo |
 |---|---|---|
-| Régimen laboral | Código del Trabajo, LOSEP o doméstico | Define los recargos de las horas extras (editables en Ajustes) |
+| Cargo | Del catálogo de Configuración; define el área | Solo organización: no afecta el cálculo |
+| Régimen laboral | Código del Trabajo o LOSEP | Define los recargos de las horas extras (editables en Configuración) |
 | Región | Sierra y Oriente, o Costa y Galápagos | Fecha del décimo cuarto (15 de agosto o 15 de marzo); se usa en el finiquito |
 | Salario mensual | Remuneración pactada | Base de todo el cálculo |
 | Fecha de ingreso | Inicio de la relación laboral | Prorratea el primer mes y activa fondos de reserva al cumplir 12 meses |
-| Décimo tercero | Cada mes, se acumula o no aplica | «Cada mes» suma 1/12 al rol; «se acumula» lo provisiona para diciembre |
-| Décimo cuarto | Ídem | «Cada mes» suma SBU/12; «se acumula» lo provisiona |
+| Décimo tercero | Obligatorio: cada mes o se acumula | «Cada mes» suma 1/12 al rol; «se acumula» lo provisiona para diciembre |
+| Décimo cuarto | Obligatorio: cada mes o se acumula | «Cada mes» suma SBU/12; «se acumula» lo provisiona |
 | Fondos de reserva | Ídem | «Cada mes» suma 8,33% desde el mes 13; «se acumula» significa que se deposita en el IESS a pedido del trabajador |
-| Cargas familiares | Hijos o dependientes | Sube el tope de gastos deducibles (renta) y reparte el 5% de utilidades |
 | Gastos personales al año | Proyección del trabajador | Genera una rebaja del impuesto a la renta (con tope) |
 | Retención de renta | Automática o manual | Automática usa la tabla del SRI; manual usa el valor que indiques |
 | Recibe horas extras | Sí o no | Cargos de dirección o confianza suelen no recibirlas |
@@ -127,7 +129,7 @@ La retención mensual se obtiene proyectando el año:
 
 1. **Base anual** = (base aportable − aporte IESS) × 12.
 2. **Impuesto causado** según la tabla progresiva: impuesto base del tramo + % × (base − fracción básica del tramo).
-3. **Rebaja por gastos personales** = 18% × el menor entre tus gastos del año, el tope según cargas y el 50% de los ingresos.
+3. **Rebaja por gastos personales** = 18% × el menor entre tus gastos del año, el tope anual de gastos y el 50% de los ingresos.
 4. **Retención mensual** = (impuesto causado − rebaja) ÷ 12, nunca menor a cero.
 
 Tabla 2026 (resolución NAC-DGERCGC25-00000043):
@@ -145,22 +147,12 @@ Tabla 2026 (resolución NAC-DGERCGC25-00000043):
 | 82.679 | 109.956 | 15.025 | 35% |
 | 109.956 | en adelante | 24.572 | 37% |
 
-Tope de gastos personales por cargas (canasta familiar básica $821,80):
-
-| Cargas | Canastas | Gasto máximo | Rebaja máxima (18%) |
-|---|---|---|---|
-| 0 | 7 | $5.752,60 | $1.035,47 |
-| 1 | 9 | $7.396,20 | $1.331,32 |
-| 2 | 11 | $9.039,80 | $1.627,16 |
-| 3 | 14 | $11.505,20 | $2.070,94 |
-| 4 | 17 | $13.970,60 | $2.514,71 |
-| 5 o más | 20 | $16.436,00 | $2.958,48 |
+Tope de gastos personales: 7 canastas familiares básicas de $821,80 = **$5.752,60** al año, con rebaja máxima de $1.035,47 (18%).
 
 **Ejemplo:** sueldo $3.000, beneficios acumulados, gastos personales $8.000.
 - IESS: 3.000 × 9,45% = 283,50. Base anual: (3.000 − 283,50) × 12 = **32.598**.
 - Tramo 26.700 a 35.136: 1.412 + 15% × (32.598 − 26.700) = **2.296,70**.
-- Sin cargas: gasto permitido = menor(8.000; 5.752,60) → rebaja 18% = 1.035,47 → retención (2.296,70 − 1.035,47) ÷ 12 = **$105.10**.
-- Con 2 cargas: gasto permitido 8.000 → rebaja 1.440 → retención **$71.39**.
+- Gasto permitido = menor(8.000; 5.752,60) → rebaja 18% = 1.035,47 → retención (2.296,70 − 1.035,47) ÷ 12 = **$105.10**.
 
 Si el sueldo anual proyectado no supera la fracción básica, la retención es $0.00 aunque no haya gastos.
 
@@ -202,10 +194,9 @@ Pantalla **Liquidaciones → Finiquito**. Años de servicio con año comercial d
 
 15% de la utilidad líquida del ejercicio:
 
-- **10%** se reparte según los **días trabajados** del año de cada empleado.
-- **5%** se reparte según las **cargas familiares**.
+Se reparte entre los empleados según los **días trabajados** en el año.
 
-Ejemplo: utilidad $100.000 → 15% = $15.000 (10.000 por días y 5.000 por cargas). Si un empleado trabajó 360 días y otro 180, el primero recibe 10.000 × 360 ÷ 540 = $6.666,67 por días.
+Ejemplo: utilidad $100.000 → 15% = $15.000. Si un empleado trabajó 360 días y otro 180, el primero recibe 15.000 × 360 ÷ 540 = $10.000 y el segundo $5.000.
 
 ## 10. Simulador de comprobantes SRI
 
@@ -232,7 +223,7 @@ Flujo simulado de «Enviar al SRI»: generar XML → firmar → recepción → a
 | Consolidado | A4 horizontal: todos los empleados, con áreas en color, totales y firmas de elaborado, revisado y aprobado |
 | Excel (.xlsx) | Hoja «Rol de pagos» por áreas con color y totales con fórmulas; hoja «Parámetros» con los valores usados. La cédula queda como texto |
 | CSV | Para otros sistemas; la cédula conserva ceros |
-| Respaldo JSON | Todos los datos de la aplicación (Ajustes → Datos) |
+| Respaldo JSON | Todos los datos de la aplicación (Configuración → Datos) |
 
 ## 12. Parámetros legales y su origen
 
@@ -245,11 +236,11 @@ Verificados en octubre de 2026 con prensa y firmas legales; no se consultó el S
 | SECAP e IECE | 0,5% cada uno | Confirmado (12,15% patronal total) |
 | IVA | 15% | Confirmado (circular SRI NAC-DGECCGC25-00000006) |
 | Tabla de renta 2026 | ver sección 6 | Confirmado (NAC-DGERCGC25-00000043); fuentes de terceros |
-| Canasta básica, topes por cargas, rebaja del 18% | $821,80; 7 a 20 canastas | **Confirmar con tu contador**: las fuentes no coinciden del todo |
+| Canasta básica, tope de gastos y rebaja del 18% | $821,80; 7 canastas | **Confirmar con tu contador**: las fuentes no coinciden del todo |
 | Recargos horas extras (LOSEP) | 25% / 100% / 25% | Editable; confirmar según tu caso |
 | Códigos de retención SRI | varios | Referenciales |
 
-Todos son editables en Ajustes → Parámetros legales, con botón para restaurar los valores 2026.
+Todos son editables en Configuración → Parámetros legales, con botón para restaurar los valores 2026.
 
 ## 13. Glosario
 

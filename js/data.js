@@ -9,20 +9,23 @@
     S.periodo = '2026-10';
     S.empresa = { nombre: 'Andes Café Tostadores Cía. Ltda.', ruc: '1792210046001', direccion: 'Av. 6 de Diciembre N34-120 y Checoslovaquia, Quito', establecimiento: '001', punto: '001', ambiente: '1', regimen: 'General' };
 
+    S.areas = [['a1', 'Administración'], ['a2', 'Producción'], ['a3', 'Ventas'], ['a4', 'Logística']].map(([id, nombre]) => ({ id, nombre }));
+    S.cargos = [['Gerente general', 'a1'], ['Contador', 'a1'], ['Jefa de producción', 'a2'], ['Tostador maestro', 'a2'], ['Barista y atención', 'a3'], ['Ejecutivo de ventas', 'a3'], ['Bodeguero', 'a4'], ['Repartidora', 'a4'], ['Auxiliar de bodega', 'a4']]
+      .map(([nombre, areaId], i) => ({ id: `g${i + 1}`, nombre, areaId }));
     const emp = (id, nombre, cedula, cargo, salario, ingreso, o = {}) => Object.assign({
-      id, nombre, cedula, cargo, regimen: 'ct', salario, ingreso, region: 'sierra',
+      id, nombre, cedula, cargo, cargoId: (S.cargos.find((c) => c.nombre === cargo) || {}).id || '', regimen: 'ct', salario, ingreso, region: 'sierra',
       d13: 'mensualiza', d14: 'mensualiza', fr: 'mensualiza', horasExtras: true, iess: true,
-      rentaModo: 'auto', renta: 0, gastosPersonales: 0, cargas: 0,
+      rentaModo: 'auto', renta: 0, gastosPersonales: 0,
     }, o);
     S.empleados = [
-      emp('e1', 'Valeria Andrade Proaño', '1704821139', 'Gerente general', 2400, '2019-03-04', { d13: 'acumula', d14: 'acumula', fr: 'acumula', horasExtras: false, gastosPersonales: 7200, cargas: 2 }),
-      emp('e2', 'Santiago Paredes León', '1710332188', 'Contador', 1350, '2021-08-16', { d13: 'acumula', d14: 'mensualiza', fr: 'acumula', horasExtras: false, gastosPersonales: 4800, cargas: 1 }),
-      emp('e3', 'Daniela Cevallos Mena', '1709176547', 'Jefa de producción', 950, '2022-01-10', { d13: 'acumula', d14: 'acumula', fr: 'mensualiza', gastosPersonales: 3000, cargas: 1 }),
-      emp('e4', 'Marco Villacís Toapanta', '1005551203', 'Tostador maestro', 780, '2023-05-02', { cargas: 3 }),
+      emp('e1', 'Valeria Andrade Proaño', '1704821139', 'Gerente general', 2400, '2019-03-04', { d13: 'acumula', d14: 'acumula', fr: 'acumula', horasExtras: false, gastosPersonales: 7200 }),
+      emp('e2', 'Santiago Paredes León', '1710332188', 'Contador', 1350, '2021-08-16', { d13: 'acumula', d14: 'mensualiza', fr: 'acumula', horasExtras: false, gastosPersonales: 4800 }),
+      emp('e3', 'Daniela Cevallos Mena', '1709176547', 'Jefa de producción', 950, '2022-01-10', { d13: 'acumula', d14: 'acumula', fr: 'mensualiza', gastosPersonales: 3000 }),
+      emp('e4', 'Marco Villacís Toapanta', '1005551203', 'Tostador maestro', 780, '2023-05-02', {}),
       emp('e5', 'Lucía Narváez Cobo', '1711904415', 'Barista y atención', 482, '2025-06-23', { d13: 'acumula', d14: 'acumula' }),
-      emp('e6', 'Andrés Quishpe Yánez', '1707662035', 'Ejecutivo de ventas', 520, '2024-02-19', { horasExtras: false, cargas: 1 }),
+      emp('e6', 'Andrés Quishpe Yánez', '1707662035', 'Ejecutivo de ventas', 520, '2024-02-19', { horasExtras: false }),
       emp('e7', 'Jonathan Salazar Ruiz', '1712248705', 'Bodeguero', 500, '2026-04-10', { d13: 'acumula', d14: 'acumula', fr: 'no' }),
-      emp('e8', 'Rosa Chicaiza Almeida', '0903441970', 'Repartidora', 560, '2022-09-05', { region: 'costa', d13: 'acumula', cargas: 2 }),
+      emp('e8', 'Rosa Chicaiza Almeida', '0903441970', 'Repartidora', 560, '2022-09-05', { region: 'costa', d13: 'acumula' }),
     ];
     // Novedades de enero a octubre 2026 (determinísticas)
     for (let m = 1; m <= 10; m++) {

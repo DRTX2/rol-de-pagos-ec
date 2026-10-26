@@ -1,4 +1,4 @@
-/* Cumplimiento legal, herramientas y ajustes */
+/* Cumplimiento legal, herramientas y configuración */
 (function () {
   'use strict';
   const App = window.App, EC = App.EC, { $, $$, esc, money, icon } = App;
@@ -28,7 +28,7 @@
       ['Décimo tercero: pagar hasta el 24 de diciembre', 'Un doceavo de lo ganado entre el 1 de diciembre y el 30 de noviembre.', 'Código del Trabajo, art. 111'],
       ['Décimo cuarto: Sierra y Oriente hasta el 15 de agosto; Costa y Galápagos hasta el 15 de marzo', 'Equivale a un SBU, proporcional al tiempo trabajado.', 'Código del Trabajo, art. 113'],
       ['Fondos de reserva desde el segundo año', '8,33% mensual; se paga cada mes o se deposita en el IESS a pedido del trabajador.', 'Código del Trabajo, art. 196'],
-      ['Participación de utilidades (15%) hasta el 15 de abril', '10% para los trabajadores y 5% para sus cargas.', 'Código del Trabajo, art. 97'],
+      ['Participación de utilidades (15%) hasta el 15 de abril', 'Se reparte entre los trabajadores según los días laborados.', 'Código del Trabajo, art. 97'],
       ['Vacaciones: 15 días anuales, más 1 día por año desde el quinto', 'Mantén un registro de las tomadas y pendientes.', 'Código del Trabajo, art. 69 y 71'],
       ['Formulario 107 y anexo RDEP en enero', 'Entrega el comprobante 107 a cada trabajador y presenta el anexo; el calendario se escalona por el noveno dígito del RUC.', 'LRTI, art. 50, y resoluciones SRI'],
       ['Verificar el salario digno', 'Si la utilidad no alcanza, se complementa en el pago de utilidades.', 'Código del Trabajo, art. 97 y 98'],
@@ -73,7 +73,7 @@
       <section class="card"><h2>Verificar clave de acceso</h2><label>Clave de 49 dígitos<input id="ck" inputmode="numeric" maxlength="49" placeholder="Pega la clave de acceso de un comprobante"></label><div id="cr" class="result"></div></section>
       <section class="card"><h2>Hora extra</h2><div class="grid2"><label>Salario mensual<input id="qs" type="number" value="${S.cfg.sbu}"></label><label>Horas<input id="qh" type="number" value="1" min="0"></label>
         <label class="span2">Tipo<select id="qt"><option value="suplementaria">Suplementaria (hasta medianoche)</option><option value="extraordinaria">Extraordinaria (madrugada, fines de semana y feriados)</option><option value="nocturno">Recargo nocturno (19h00 a 06h00)</option></select></label></div><div id="qr" class="result"></div></section>
-      <section class="card"><h2>Retención de renta mensual</h2><div class="grid2"><label>Ingreso mensual gravado (USD)<input id="rs" type="number" value="2000"></label><label>Gastos personales al año (USD)<input id="rg" type="number" value="0"></label><label>Cargas familiares<input id="rc" type="number" value="0"></label></div><div id="rr" class="result"></div></section>
+      <section class="card"><h2>Retención de renta mensual</h2><div class="grid2"><label>Ingreso mensual gravado (USD)<input id="rs" type="number" value="2000"></label><label>Gastos personales al año (USD)<input id="rg" type="number" value="0"></label></div><div id="rr" class="result"></div></section>
       <section class="card"><h2>Tabla del SRI</h2><div id="rt"></div></section></div>`;
     $('#vn').oninput = (e) => { const x = e.target.value.trim(), o = $('#vr');
       if (!x) { o.innerHTML = ''; return; }
@@ -87,20 +87,20 @@
     const q = () => { const vh = $('#qs').value / S.cfg.horasMes, r = S.cfg.regimenes.ct, rec = r[$('#qt').value], mult = $('#qt').value === 'nocturno' ? rec / 100 : 1 + rec / 100;
       $('#qr').innerHTML = `<dl class="rows"><dt>Valor de la hora (salario ÷ ${S.cfg.horasMes})</dt><dd>${money(vh)}</dd><dt>Valor de la hora extra</dt><dd>${money(vh * mult)}</dd><dt class="tot">Total a pagar</dt><dd class="tot">${money(vh * mult * $('#qh').value)}</dd></dl>`; };
     ['qs', 'qh', 'qt'].forEach((id) => ($('#' + id).oninput = q)); q();
-    const r = () => { const a = +$('#rs').value || 0, iess = EC.r2((a * S.cfg.iessPersonal) / 100), x = EC.retencionMensual(a, iess, +$('#rg').value || 0, +$('#rc').value || 0, S.cfg);
+    const r = () => { const a = +$('#rs').value || 0, iess = EC.r2((a * S.cfg.iessPersonal) / 100), x = EC.retencionMensual(a, iess, +$('#rg').value || 0, S.cfg);
       $('#rr').innerHTML = `<dl class="rows"><dt>Base anual (ingreso − IESS) × 12</dt><dd>${money(x.base)}</dd><dt>Impuesto causado según la tabla</dt><dd>${money(x.impuestoAnual)}</dd><dt>Gasto permitido (tope ${money(x.tope)})</dt><dd>${money(x.permitido)}</dd><dt>Rebaja ${S.cfg.rebajaGastos}%</dt><dd>${money(x.rebaja)}</dd><dt class="tot">Retención mensual</dt><dd class="tot">${money(x.mensual)}</dd></dl>`;
-      $('#rt').innerHTML = App.irTableHTML(x.base, +$('#rc').value || 0); };
-    ['rs', 'rg', 'rc'].forEach((id) => ($('#' + id).oninput = r)); r();
+      $('#rt').innerHTML = App.irTableHTML(x.base); };
+    ['rs', 'rg'].forEach((id) => ($('#' + id).oninput = r)); r();
   };
 
-  /* ---------- Ajustes ---------- */
-  let tab = 'datos';
+  /* ---------- Configuración ---------- */
+  let tab = 'empresa';
   App.views.ajustes = (v) => {
     const S = App.S;
-    v.innerHTML = `<div class="head"><div><h1>Ajustes y datos</h1><p class="sub">Empresa, parámetros legales y administración de la información.</p></div></div>
-      <div class="seg wide">${[['datos', 'Datos'], ['empresa', 'Empresa'], ['params', 'Parámetros legales']].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div><div id="tb"></div>`;
+    v.innerHTML = `<div class="head"><div><h1>Configuración</h1><p class="sub">Empieza aquí: datos de la empresa, cargos y áreas, y parámetros legales. Después agrega a tus empleados.</p></div></div>
+      <div class="seg wide">${[['empresa', 'Empresa'], ['cargos', 'Cargos y áreas'], ['params', 'Parámetros legales'], ['datos', 'Datos']].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div><div id="tb"></div>`;
     $$('.seg button', v).forEach((b) => (b.onclick = () => { tab = b.dataset.t; App.render(); }));
-    ({ datos, empresa, params })[tab]($('#tb', v));
+    ({ datos, empresa, cargos, params })[tab]($('#tb', v));
   };
   function datos(h) {
     const S = App.S;
@@ -115,6 +115,33 @@
     $('#rs').onchange = (ev) => { const f = ev.target.files[0]; if (!f) return; f.text().then((t) => { try { App.replace(JSON.parse(t)); App.render(); App.toast('Respaldo restaurado'); } catch (e) { App.toast('El archivo no es un respaldo válido'); } }); };
     $('#all').onclick = App.clearAll;
   }
+  function cargos(h) {
+    const S = App.S, nCar = (id) => S.cargos.filter((c) => c.areaId === id).length, nEmp = (id) => S.empleados.filter((e) => e.cargoId === id).length;
+    const areaOpts = (sel) => S.areas.map((a) => `<option value="${a.id}" ${a.id === sel ? 'selected' : ''}>${esc(a.nombre)}</option>`).join('');
+    h.innerHTML = `<div class="cols"><section class="card"><h2>Áreas</h2><p class="sub">Departamentos de la empresa: Administración, Ventas, Producción…</p>
+        <form class="addrow" id="fa"><input id="an" placeholder="Nueva área" required autocomplete="off"><button class="btn primary" type="submit">${icon('plus')}Agregar</button></form>
+        ${S.areas.length ? `<ul class="catl">${S.areas.map((a) => `<li><input data-a="${a.id}" value="${esc(a.nombre)}" aria-label="Nombre del área"><span class="tag mute">${nCar(a.id)} cargo${nCar(a.id) === 1 ? '' : 's'}</span><button class="btn sm ghost danger" data-da="${a.id}" aria-label="Eliminar área">${icon('trash')}</button></li>`).join('')}</ul>` : '<div class="empty"><b>Sin áreas</b><p>Crea la primera para poder agregar cargos.</p></div>'}</section>
+      <section class="card"><h2>Cargos</h2><p class="sub">Puestos de trabajo. Cada cargo pertenece a un área y se elige en la ficha del empleado.</p>
+        <form class="addrow" id="fc"><input id="cn" placeholder="Nuevo cargo" required autocomplete="off" ${S.areas.length ? '' : 'disabled'}><select id="ca" aria-label="Área" ${S.areas.length ? '' : 'disabled'}>${areaOpts()}</select><button class="btn primary" type="submit" ${S.areas.length ? '' : 'disabled'}>${icon('plus')}Agregar</button></form>
+        ${S.cargos.length ? `<ul class="catl">${S.cargos.map((c) => `<li class="c3"><input data-c="${c.id}" value="${esc(c.nombre)}" aria-label="Nombre del cargo"><select data-cs="${c.id}" aria-label="Área del cargo">${areaOpts(c.areaId)}</select><span class="tag mute">${nEmp(c.id)} emp.</span><button class="btn sm ghost danger" data-dc="${c.id}" aria-label="Eliminar cargo">${icon('trash')}</button></li>`).join('')}</ul>` : `<div class="empty"><b>Sin cargos</b><p>${S.areas.length ? 'Agrega el primero arriba.' : 'Primero crea un área.'}</p></div>`}</section></div>
+      <div class="row"><button class="btn ghost" id="vaciar">${icon('trash')}Vaciar cargos y áreas</button></div>`;
+    $('#fa', h).onsubmit = (e) => { e.preventDefault(); const n = $('#an', h).value.trim(); if (!n) return; S.areas.push({ id: App.uid(), nombre: n }); App.save(); App.render(); };
+    $('#fc', h).onsubmit = (e) => { e.preventDefault(); const n = $('#cn', h).value.trim(); if (!n) return; S.cargos.push({ id: App.uid(), nombre: n, areaId: $('#ca', h).value }); App.save(); App.render(); };
+    $$('[data-a]', h).forEach((i) => (i.onchange = () => { const a = S.areas.find((x) => x.id === i.dataset.a); a.nombre = i.value.trim() || a.nombre; App.save(); App.render(); }));
+    $$('[data-c]', h).forEach((i) => (i.onchange = () => { const c = S.cargos.find((x) => x.id === i.dataset.c); c.nombre = i.value.trim() || c.nombre; S.empleados.forEach((e) => { if (e.cargoId === c.id) e.cargo = c.nombre; }); App.save(); App.render(); }));
+    $$('[data-cs]', h).forEach((i) => (i.onchange = () => { S.cargos.find((x) => x.id === i.dataset.cs).areaId = i.value; App.save(); App.render(); }));
+    $$('[data-da]', h).forEach((b) => (b.onclick = () => {
+      const a = S.areas.find((x) => x.id === b.dataset.da);
+      if (nCar(a.id)) return App.toast(`«${a.nombre}» tiene cargos: muévelos o elimínalos primero`);
+      const snap = JSON.stringify(S); S.areas = S.areas.filter((x) => x !== a); App.save(); App.render(); App.toast('Área eliminada', () => { App.replace(JSON.parse(snap)); App.render(); });
+    }));
+    $$('[data-dc]', h).forEach((b) => (b.onclick = () => {
+      const c = S.cargos.find((x) => x.id === b.dataset.dc), snap = JSON.stringify(S);
+      S.cargos = S.cargos.filter((x) => x !== c); S.empleados.forEach((e) => { if (e.cargoId === c.id) e.cargoId = ''; }); // el empleado conserva el nombre del cargo
+      App.save(); App.render(); App.toast('Cargo eliminado', () => { App.replace(JSON.parse(snap)); App.render(); });
+    }));
+    $('#vaciar', h).onclick = () => App.clearModule('cargos');
+  }
   function empresa(h) {
     const S = App.S, E = S.empresa, f = (id, l, ph = '') => `<label>${l}<input id="${id}" value="${esc(E[id] || '')}" placeholder="${ph}"></label>`;
     h.innerHTML = `<section class="card"><h2>Datos del emisor</h2><div class="grid2"><label class="span2">Razón social<input id="nombre" value="${esc(E.nombre)}"></label>
@@ -126,16 +153,14 @@
   }
   function params(h) {
     const c = App.S.cfg, f = (k, l, st = 'any') => `<label>${l}<input type="number" step="${st}" data-cfg="${k}" value="${c[k]}"></label>`;
-    h.innerHTML = `<div class="note"><b>Verificados en octubre de 2026</b> con prensa y firmas legales (no con el SRI directamente): SBU $482 (Consejo Nacional de Trabajo y Salarios, 15-dic-2025) · IESS 9,45% personal y 11,15% patronal · SECAP 0,5% e IECE 0,5% · IVA 15% (circular SRI NAC-DGECCGC25-00000006) · tabla de renta 2026 (resolución NAC-DGERCGC25-00000043).<br><b>Para confirmar con tu contador:</b> canasta básica $821,80, topes de gastos personales por cargas y rebaja del 18%, porque las fuentes no coinciden del todo.</div>
+    h.innerHTML = `<div class="note"><b>Verificados en octubre de 2026</b> con prensa y firmas legales (no con el SRI directamente): SBU $482 (Consejo Nacional de Trabajo y Salarios, 15-dic-2025) · IESS 9,45% personal y 11,15% patronal · SECAP 0,5% e IECE 0,5% · IVA 15% (circular SRI NAC-DGECCGC25-00000006) · tabla de renta 2026 (resolución NAC-DGERCGC25-00000043).<br><b>Para confirmar con tu contador:</b> canasta básica $821,80, tope de gastos personales y rebaja del 18%, porque las fuentes no coinciden del todo.</div>
       <div class="cols"><section class="card"><h2>Generales</h2><div class="grid2">${f('sbu', 'SBU (salario básico)')}${f('horasMes', 'Horas por mes', '1')}${f('diasMes', 'Días por mes', '1')}${f('iva', 'IVA (%)')}</div></section>
-      <section class="card"><h2>Aportes y fondos (%)</h2><div class="grid2">${f('iessPersonal', 'IESS personal')}${f('iessPatronal', 'IESS patronal')}${f('secap', 'SECAP')}${f('iece', 'IECE')}${f('fondosReserva', 'Fondos de reserva')}${f('rebajaGastos', 'Rebaja por gastos personales')}${f('topeIngresos', 'Tope de gastos (% de ingresos)')}${f('canasta', 'Canasta familiar básica (USD)')}</div></section></div>
+      <section class="card"><h2>Aportes y fondos (%)</h2><div class="grid2">${f('iessPersonal', 'IESS personal')}${f('iessPatronal', 'IESS patronal')}${f('secap', 'SECAP')}${f('iece', 'IECE')}${f('fondosReserva', 'Fondos de reserva')}${f('rebajaGastos', 'Rebaja por gastos personales')}${f('topeIngresos', 'Tope de gastos (% de ingresos)')}${f('canasta', 'Canasta familiar básica (USD)')}${f('canastas', 'Tope de gastos (n.º de canastas)')}</div></section></div>
       <section class="card"><h2>Regímenes y recargos de horas extras (%)</h2><div class="tablewrap flat"><table class="list"><thead><tr><th class="l">Régimen</th><th>Suplementaria</th><th>Extraordinaria</th><th>Nocturno</th></tr></thead><tbody>${Object.entries(c.regimenes).map(([k, r]) => `<tr><td class="l">${esc(r.nombre)}</td>${['suplementaria', 'extraordinaria', 'nocturno'].map((x) => `<td><input type="number" data-reg="${k}.${x}" value="${r[x]}"></td>`).join('')}</tr>`).join('')}</tbody></table></div></section>
-      <section class="card"><h2>Tope de gastos personales por cargas familiares</h2><p class="sub">Número de canastas básicas deducibles según las cargas del empleado.</p><div class="tablewrap flat"><table class="list"><thead><tr>${c.canastas.map((_, i) => `<th>${i === c.canastas.length - 1 ? i + ' o más' : i + ' cargas'}</th>`).join('')}</tr></thead><tbody><tr>${c.canastas.map((k, i) => `<td><input type="number" data-can="${i}" value="${k}"></td>`).join('')}</tr></tbody></table></div></section>
       <section class="card"><h2>Tabla de impuesto a la renta (anual)</h2><div class="tablewrap flat"><table class="list"><thead><tr><th>Fracción básica</th><th>Exceso hasta</th><th>Impuesto base</th><th>% excedente</th></tr></thead><tbody>${c.irTabla.map((t, i) => `<tr><td>${money(t.desde)}</td><td>${t.hasta === null ? 'en adelante' : money(t.hasta)}</td><td><input type="number" data-ir="${i}.base" value="${t.base}"></td><td><input type="number" data-ir="${i}.pct" value="${t.pct}"></td></tr>`).join('')}</tbody></table></div></section>
       <div class="row"><button class="btn danger" id="rst">Restaurar valores 2026</button></div>`;
     $$('[data-cfg]', h).forEach((i) => (i.oninput = () => { c[i.dataset.cfg] = +i.value; App.save(); }));
     $$('[data-reg]', h).forEach((i) => (i.oninput = () => { const [k, x] = i.dataset.reg.split('.'); c.regimenes[k][x] = +i.value; App.save(); }));
-    $$('[data-can]', h).forEach((i) => (i.oninput = () => { c.canastas[+i.dataset.can] = +i.value; App.save(); }));
     $$('[data-ir]', h).forEach((i) => (i.oninput = () => { const [k, x] = i.dataset.ir.split('.'); c.irTabla[+k][x] = +i.value; App.save(); }));
     $('#rst').onclick = () => App.clearModule('params');
   }

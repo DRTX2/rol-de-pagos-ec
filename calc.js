@@ -14,15 +14,14 @@
     iece: 0.5,
     fondosReserva: 8.33,
     iva: 15,
-    ver: 2, // versión de los parámetros legales (migra datos guardados con valores anteriores)
+    ver: 3, // versión de los parámetros legales (migra datos guardados con valores anteriores)
     canasta: 821.8, // canasta familiar básica: base de los topes de gastos personales
-    canastas: [7, 9, 11, 14, 17, 20], // tope en canastas según cargas familiares: 0, 1, 2, 3, 4, 5 o más
+    canastas: 7, // tope de gastos personales en canastas (sin cargas familiares: se usa el tramo base)
     rebajaGastos: 18, // % de rebaja del impuesto sobre el gasto permitido
     topeIngresos: 50, // los gastos permitidos no superan este % de los ingresos
     regimenes: {
       ct: { nombre: 'Código del Trabajo (sector privado)', suplementaria: 50, extraordinaria: 100, nocturno: 25 },
       losep: { nombre: 'LOSEP (sector público)', suplementaria: 25, extraordinaria: 100, nocturno: 25 },
-      domestico: { nombre: 'Trabajo doméstico', suplementaria: 50, extraordinaria: 100, nocturno: 25 },
     },
     // Tabla IR personas naturales 2026 (Res. NAC-DGERCGC25-00000043). Editable.
     irTabla: [
@@ -66,16 +65,15 @@
     const t = (cfg.irTabla || DEFAULTS.irTabla).find((x) => base >= x.desde && (x.hasta === null || base <= x.hasta));
     return t ? t.base + (base - t.desde) * (t.pct / 100) : 0;
   }
-  /** Tope anual de gastos personales según cargas familiares (múltiplos de la canasta básica). */
-  function topeGastos(cargas, cfg) {
+  /** Tope anual de gastos personales: múltiplo de la canasta básica. */
+  function topeGastos(cfg) {
     const c = cfg || DEFAULTS;
-    const i = Math.max(0, Math.min(c.canastas.length - 1, Math.floor(num(cargas))));
-    return r2(c.canastas[i] * c.canasta);
+    return r2(c.canastas * c.canasta);
   }
   /** Retención mensual proyectada: ingresos anualizados − IESS → tabla → menos rebaja por gastos personales → ÷ 12. */
-  function retencionMensual(aportable, iessMes, gastosAnuales, cargas, cfg) {
+  function retencionMensual(aportable, iessMes, gastosAnuales, cfg) {
     const base = Math.max(0, (aportable - iessMes) * 12);
-    const tope = topeGastos(cargas, cfg);
+    const tope = topeGastos(cfg);
     const permitido = Math.min(num(gastosAnuales), tope, (cfg.topeIngresos / 100) * aportable * 12);
     const rebaja = (cfg.rebajaGastos / 100) * permitido;
     const imp = impuestoAnual(base, cfg);
@@ -84,7 +82,7 @@
 
   /**
    * emp: ficha. per: novedades del mes. cfg: parámetros. periodo 'YYYY-MM'.
-   * Modos de décimos/fondos: 'mensualiza' (se paga en el rol), 'acumula' (se provisiona), 'no'.
+   * Modos de décimos/fondos: 'mensualiza' (se paga en el rol), 'acumula' (se provisiona); fondos también admiten 'no'. Décimos 13 y 14 son obligatorios.
    */
   function calcular(emp, per, cfg, periodo) {
     cfg = cfg || DEFAULTS;
@@ -117,7 +115,8 @@
     const frBase = frAplica ? r2((aportable * cfg.fondosReserva) / 100) : 0;
 
     const modo = (v) => v || 'mensualiza';
-    const d13 = modo(emp.d13), d14 = modo(emp.d14), fr = modo(emp.fr);
+    const obligatorio = (v) => (v === 'acumula' ? 'acumula' : 'mensualiza'); // décimos: nunca 'no'
+    const d13 = obligatorio(emp.d13), d14 = obligatorio(emp.d14), fr = modo(emp.fr);
     const d13Pago = d13 === 'mensualiza' ? d13Base : 0;
     const d14Pago = d14 === 'mensualiza' ? d14Base : 0;
     const frPago = fr === 'mensualiza' ? frBase : 0;
@@ -128,7 +127,7 @@
     const iessEmp = afiliado ? r2((aportable * cfg.iessPersonal) / 100) : 0;
     let renta, rentaDet = null;
     if (emp.rentaModo === 'manual') renta = r2(num(emp.renta));
-    else { rentaDet = retencionMensual(aportable, iessEmp, emp.gastosPersonales, emp.cargas, cfg); renta = rentaDet.mensual; }
+    else { rentaDet = retencionMensual(aportable, iessEmp, emp.gastosPersonales, cfg); renta = rentaDet.mensual; }
     const anticipo = r2(num(per.anticipo));
     const prestamos = r2(num(per.prestamos));
     const otrosDesc = r2(num(per.otrosDesc));
@@ -212,21 +211,11 @@
   }
 
   /* ---------- Participación de utilidades (15%) ---------- */
-  function utilidades(utilLiquida, filas, cfg) {
-    // filas: [{id, dias, cargas}]
+  function utilidades(utilLiquida, filas) {
+    // filas: [{id, dias}]; todo el 15% se reparte por días trabajados
     const total = r2(num(utilLiquida) * 0.15);
-    const p10 = r2(num(utilLiquida) * 0.10), p5 = r2(num(utilLiquida) * 0.05);
     const sumD = filas.reduce((a, f) => a + num(f.dias), 0);
-    const sumC = filas.reduce((a, f) => a + num(f.cargas), 0);
-    return {
-      total, p10, p5,
-      filas: filas.map((f) => {
-        const a = sumD ? r2((p10 * num(f.dias)) / sumD) : 0;
-        const b = sumC ? r2((p5 * num(f.cargas)) / sumC) : 0;
-        return { id: f.id, porDias: a, porCargas: b, total: r2(a + b) };
-      }),
-      sinCargas: !sumC ? p5 : 0, // si nadie tiene cargas, el 5% se reparte entre todos por días
-    };
+    return { total, filas: filas.map((f) => ({ id: f.id, total: sumD ? r2((total * num(f.dias)) / sumD) : 0 })) };
   }
 
   /* ---------- Cédula / RUC ---------- */

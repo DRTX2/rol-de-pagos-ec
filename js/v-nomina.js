@@ -9,25 +9,24 @@
   const avatar = (e) => `<span class="av" style="--h:${hue(e.nombre)}">${esc(iniciales(e.nombre))}</span>`;
   const n2 = (x) => (x ? x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–');
   const MODOS = {
-    d13: [['mensualiza', 'Se paga cada mes en el rol'], ['acumula', 'Se acumula (pago hasta el 24 de diciembre)'], ['no', 'No aplica']],
-    d14: [['mensualiza', 'Se paga cada mes en el rol'], ['acumula', 'Se acumula (pago según región)'], ['no', 'No aplica']],
+    d13: [['mensualiza', 'Se paga cada mes en el rol'], ['acumula', 'Se acumula (pago hasta el 24 de diciembre)']],
+    d14: [['mensualiza', 'Se paga cada mes en el rol'], ['acumula', 'Se acumula (pago según región)']],
     fr: [['mensualiza', 'Se paga cada mes en el rol'], ['acumula', 'Se deposita en el IESS (a pedido del trabajador)'], ['no', 'No aplica']],
   };
   const modoTag = (m) => ({ mensualiza: '<span class="tag">Mensual</span>', acumula: '<span class="tag warn">Acumula</span>', no: '<span class="tag mute">No aplica</span>' }[m || 'mensualiza']);
   const regNombre = (e) => (App.S.cfg.regimenes[e.regimen] || {}).nombre || '';
 
   /* ---------- Tabla del SRI (se reutiliza en ficha, herramientas y ajustes) ---------- */
-  App.irTableHTML = (base, cargas) => {
-    const c = App.S.cfg, ci = Math.min(c.canastas.length - 1, Math.floor(+cargas || 0));
+  App.irTableHTML = (base) => {
+    const c = App.S.cfg;
     const rows = c.irTabla.map((t) => { const on = base !== undefined && base >= t.desde && (t.hasta === null || base <= t.hasta);
       return `<tr class="${on ? 'hl' : ''}"><td>${money(t.desde)}</td><td>${t.hasta === null ? 'en adelante' : money(t.hasta)}</td><td>${money(t.base)}</td><td>${t.pct}%</td></tr>`; }).join('');
-    const gr = c.canastas.map((k, i) => `<tr class="${i === ci ? 'hl' : ''}"><td>${i === c.canastas.length - 1 ? `${i} o más` : i}</td><td>${k}</td><td>${money(k * c.canasta)}</td><td>${money((k * c.canasta * c.rebajaGastos) / 100)}</td></tr>`).join('');
+    const tope = EC.topeGastos(c);
     return `<div class="irt"><h5>Impuesto a la renta anual · personas naturales ${c.anio}</h5>
       <table><thead><tr><th>Fracción básica</th><th>Exceso hasta</th><th>Impuesto base</th><th>% del excedente</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="help">Impuesto = impuesto base + % × (base anual − fracción básica). Base anual = (ingresos − aporte IESS) × 12. ${base !== undefined ? `Base de este empleado: <b>${money(base)}</b> (fila resaltada).` : ''}</p>
-      <h5>Gastos personales: tope anual y rebaja máxima (canasta ${money(c.canasta)})</h5>
-      <table><thead><tr><th>Cargas</th><th>Canastas</th><th>Gasto máximo</th><th>Rebaja máxima (${c.rebajaGastos}%)</th></tr></thead><tbody>${gr}</tbody></table>
-      <p class="help">Rebaja = ${c.rebajaGastos}% del menor entre tus gastos, el tope por cargas y el ${c.topeIngresos}% de los ingresos. Se resta del impuesto, no de la base. Retención mensual = (impuesto − rebaja) ÷ 12.</p></div>`;
+      <h5>Gastos personales</h5>
+      <p class="help">Tope anual: ${c.canastas} canastas de ${money(c.canasta)} = <b>${money(tope)}</b>, rebaja máxima ${money((tope * c.rebajaGastos) / 100)} (${c.rebajaGastos}%). Rebaja = ${c.rebajaGastos}% del menor entre tus gastos, el tope y el ${c.topeIngresos}% de los ingresos. Se resta del impuesto, no de la base. Retención mensual = (impuesto − rebaja) ÷ 12.</p></div>`;
   };
 
   /* ---------- Fórmula en palabras de cada línea del rol ---------- */
@@ -73,7 +72,7 @@
     const acum = [['Décimo tercero', c.prov13], ['Décimo cuarto', c.prov14], ['Fondos de reserva', c.provFR]].filter((x) => x[1] > 0);
     return `<section class="pr"><header class="pr-h"><div><b>${esc(E.nombre || 'Empresa')}</b><small>${E.ruc ? 'RUC ' + esc(E.ruc) : ''}${E.direccion ? ' · ' + esc(E.direccion) : ''}</small></div><div class="pr-t"><h2>ROL DE PAGOS</h2><span>${esc(App.periodoLabel(S.periodo).toUpperCase())}</span></div></header>
       <table class="pr-emp"><tr><th>Empleado</th><td colspan="3">${esc(e.nombre)}</td><th>Cédula</th><td>${esc(e.cedula || '—')}</td></tr>
-      <tr><th>Cargo</th><td>${esc(e.cargo || '—')}</td><th>Ingreso</th><td>${esc(e.ingreso || '—')}</td><th>Días trabajados</th><td>${c.dias}</td></tr>
+      <tr><th>Cargo</th><td>${esc(e.cargo || '—')}${App.areaDe(e) ? ' · ' + esc(App.areaDe(e)) : ''}</td><th>Ingreso</th><td>${esc(e.ingreso || '—')}</td><th>Días trabajados</th><td>${c.dias}</td></tr>
       <tr><th>Régimen</th><td colspan="3">${esc(regNombre(e))}</td><th>Salario base</th><td>${money(+e.salario || 0)}</td></tr></table>
       <table class="pr-mov"><thead><tr><th colspan="2">INGRESOS</th><th colspan="2">EGRESOS</th></tr></thead><tbody>${rows}</tbody>
       <tfoot><tr><td>Total ingresos</td><td class="n">${n2(c.totalIngresos)}</td><td>Total egresos</td><td class="n">${n2(c.totalEgresos)}</td></tr></tfoot></table>
@@ -152,7 +151,20 @@
     App.download(`rol-de-pagos-${S.periodo}.csv`, '﻿' + [head, ...lines].map((r) => r.map((v) => (typeof v === 'string' && v.startsWith('="') ? `"${v.replace(/"/g, '""')}"` : q(v))).join(';')).join('\r\n'), 'text/csv;charset=utf-8');
   }
 
-  const emptyNomina = (v, t) => { v.innerHTML = `<div class="empty big"><h2>${t}</h2><p>Carga los datos de demostración para explorar todos los módulos, o empieza agregando tu primer empleado.</p>
+  /** Guía del flujo real: configurar → empleados → rol del mes → imprimir o exportar. */
+  function pasosHTML() {
+    const S = App.S, p = S.periodo, ok = (k) => !!S.cierre[`${p}:${k}`];
+    const pasos = [
+      ['Configura la empresa', 'Razón social, RUC válido y al menos un cargo con su área.', '#/ajustes', EC.validarRUC(S.empresa.ruc).valido && !!S.empresa.nombre && S.cargos.length > 0],
+      ['Agrega a tus empleados', 'Régimen, salario, fecha de ingreso y beneficios de cada uno.', '#/empleados', S.empleados.length > 0],
+      [`Carga las novedades de ${App.periodoLabel(p)}`, 'Días, horas extras, bonos, anticipos y descuentos. Revisa los avisos.', '#/rol', ok('rol')],
+      ['Imprime o exporta el rol', 'Rol firmado por cada trabajador, consolidado y Excel para contabilidad.', '#/rol', ok('salida')],
+    ];
+    if (pasos.every((x) => x[3])) return '';
+    const sig = pasos.findIndex((x) => !x[3]);
+    return `<section class="card steps"><h2>Flujo del mes</h2><ol>${pasos.map(([t, d, href, hecho], i) => `<li class="${hecho ? 'done' : i === sig ? 'now' : ''}"><a href="${href}"><i>${hecho ? icon('check') : i + 1}</i><span><b>${t}</b><small>${d}</small></span></a></li>`).join('')}</ol></section>`;
+  }
+  const emptyNomina = (v, t) => { v.innerHTML = pasosHTML() + `<div class="empty big"><h2>${t}</h2><p>Carga los datos de demostración para explorar todos los módulos, o empieza agregando tu primer empleado.</p>
     <div class="row center"><button class="btn primary" id="seed">Cargar demo</button><a class="btn" href="#/empleados">Agregar empleado</a></div></div>`;
     $('#seed').onclick = () => { App.seedDemo(); App.render(); }; };
 
@@ -173,9 +185,9 @@
     for (let m = 1; m <= 12; m++) { const pp = `${year}-${String(m).padStart(2, '0')}`; if (pp > p) break; const t = App.totalesPeriodo(pp); if (t.n) meses.push({ label: App.MESES[m - 1].slice(0, 3), vals: { neto: t.neto, desc: t.egresos, pat: t.patronal || 0, prov: t.prov } }); }
     const alerts = [];
     S.empleados.forEach((e) => { if (e.cedula && !EC.cedulaValida(e.cedula)) alerts.push(`${e.nombre}: cédula con dígito verificador inválido.`); if (+e.salario < S.cfg.sbu) alerts.push(`${e.nombre}: salario menor al SBU.`); });
-    if (!EC.validarRUC(S.empresa.ruc).valido) alerts.push('RUC de la empresa vacío o inválido (Ajustes).');
+    if (!EC.validarRUC(S.empresa.ruc).valido) alerts.push('RUC de la empresa vacío o inválido (Configuración).');
     act.forEach(([e, c]) => c.avisos.filter((a) => !a.startsWith('Fondos')).forEach((a) => alerts.push(`${e.nombre}: ${a}`)));
-    v.innerHTML = `<div class="head"><div><h1>Resumen de nómina</h1><p class="sub">${esc(S.empresa.nombre || 'Tu empresa')} · ${App.periodoLabel(p)}</p></div>
+    v.innerHTML = pasosHTML() + `<div class="head"><div><h1>Resumen de nómina</h1><p class="sub">${esc(S.empresa.nombre || 'Tu empresa')} · ${App.periodoLabel(p)}</p></div>
         <div class="row"><a class="btn" href="#/rol">${icon('rol')}Abrir rol del mes</a></div></div>
       <section class="hero"><div class="hero-main"><span class="k">Total neto a pagar</span><b class="hero-n" id="hn">$0.00</b><span class="k2">a ${T.n} empleados · costo total para la empresa <b id="hc">$0.00</b></span></div>
         <div class="hero-split"><span class="k">¿A dónde va cada dólar del costo?</span><div class="split" id="split">${seg.map(([l, n, c]) => `<i style="width:0;background:${c}" data-w="${T.costo ? (n / T.costo) * 100 : 0}" title="${l}: ${money(n)}"></i>`).join('')}</div>
@@ -226,6 +238,7 @@
     const lista = S.empleados.filter((e) => activo(e, p));
     if (!lista.length) { v.innerHTML = `<div class="empty big"><h2>Nadie en nómina en ${App.periodoLabel(p)}</h2><p>Los empleados aparecen desde su mes de ingreso. Cambia el periodo arriba.</p></div>`; return; }
     if (!lista.find((e) => e.id === S.selEmp)) S.selEmp = lista[0].id;
+    App.marcar('rol');
     v.innerHTML = `<div class="head"><div><h1>Rol de pagos · ${App.periodoLabel(p)}</h1><p class="sub">Elige un empleado, ingresa sus novedades del mes y el rol se recalcula al instante.</p></div>
       <div class="row wrap"><div class="seg" role="group" aria-label="Vista"><button data-m="vivo" class="${modo === 'vivo' ? 'on' : ''}">En vivo</button><button data-m="tabla" class="${modo === 'tabla' ? 'on' : ''}">Tabla</button></div>
       <button class="btn" id="copy">${icon('undo')}Copiar mes anterior</button><button class="btn" id="xls">${icon('down')}Excel</button><button class="btn" id="csv">${icon('down')}CSV</button><button class="btn" id="pc">${icon('print')}Consolidado</button><button class="btn primary" id="pa">${icon('print')}Imprimir roles</button></div></div>
@@ -237,9 +250,9 @@
         <li><b>Neto a recibir:</b> total de ingresos menos total de egresos. Es lo que se deposita al trabajador.</li></ul></div></details>
       <div class="stats" id="stats"></div><div id="body"></div>`;
     $$('.seg button', v).forEach((b) => (b.onclick = () => { modo = b.dataset.m; App.render(); }));
-    $('#xls').onclick = exportExcel; $('#csv').onclick = exportCSV;
-    $('#pc').onclick = () => App.print(consolidadoHTML(), 'landscape');
-    $('#pa').onclick = () => App.print(lista.map((e) => App.slipHTML(e, App.calc(e))).join(''));
+    $('#xls').onclick = () => { App.marcar('salida'); exportExcel(); }; $('#csv').onclick = () => { App.marcar('salida'); exportCSV(); };
+    $('#pc').onclick = () => { App.marcar('salida'); App.print(consolidadoHTML(), 'landscape'); };
+    $('#pa').onclick = () => { App.marcar('salida'); App.print(lista.map((e) => App.slipHTML(e, App.calc(e))).join('')); };
     $('#copy').onclick = async () => {
       const prev = App.shiftPeriodo(p, -1), src = S.periodos[prev];
       if (!src || !Object.keys(src).length) return App.toast(`No hay novedades en ${App.periodoLabel(prev)}`);
@@ -283,7 +296,7 @@
       <div class="net2"><span>Neto a recibir<small>Total ingresos − total egresos</small></span><b id="t-neto">$0.00</b></div><div class="flow-bar" id="fb"></div><ul class="legend inline" id="fl"></ul>
       <details class="bd more"><summary><span>Costo para la empresa</span><b id="t-costo">$0.00</b>${icon('chev')}</summary><dl id="emp-dl"></dl></details><ul class="warns" id="avs"></ul></div>`;
     $('#fx', slip).onchange = (ev) => { showFx = ev.target.checked; $('.slip2', slip).classList.toggle('fx-on', showFx); };
-    $('#vr', ctl).onclick = () => App.print(App.slipHTML(e, App.calc(e)));
+    $('#vr', ctl).onclick = () => { App.marcar('salida'); App.print(App.slipHTML(e, App.calc(e))); };
     const upd = () => {
       const c = App.calc(e);
       LINEAS.forEach(([g, k, lab]) => { const li = $(`#li-${g} li[data-k="${k}"]`, slip), x = c[k]; li.classList.toggle('show', x > 0 || k === 'sueldo'); $('.t', li).textContent = lab(c); $('.fx', li).textContent = fxText(k, c, e); App.setNum($('.vl', li), x); });
@@ -344,7 +357,7 @@
     const S = App.S;
     v.innerHTML = `<div class="head"><div><h1>Empleados</h1><p class="sub">Cada ficha define régimen, salario y qué beneficios recibe.</p></div><div class="row"><button class="btn ghost" id="vaciar">${icon('trash')}Vaciar</button><button class="btn primary" id="add">${icon('plus')}Nuevo empleado</button></div></div>
       ${S.empleados.length ? `<div class="tablewrap"><table class="list"><thead><tr><th class="l">Empleado</th><th class="l">Cédula</th><th class="l">Régimen</th><th>Salario</th><th class="l">Ingreso</th><th>13º</th><th>14º</th><th>F. reserva</th><th>H. extra</th><th></th></tr></thead><tbody>
-      ${S.empleados.map((e) => `<tr data-id="${e.id}"><td class="l"><div class="cellp">${avatar(e)}<span><b>${esc(e.nombre)}</b><small>${esc(e.cargo)}</small></span></div></td><td class="l">${esc(e.cedula)} ${e.cedula && !EC.cedulaValida(e.cedula) ? '<span class="tag bad">inválida</span>' : ''}</td>
+      ${S.empleados.map((e) => `<tr data-id="${e.id}"><td class="l"><div class="cellp">${avatar(e)}<span><b>${esc(e.nombre)}</b><small>${esc(e.cargo)}${App.areaDe(e) ? ' · ' + esc(App.areaDe(e)) : ''}</small></span></div></td><td class="l">${esc(e.cedula)} ${e.cedula && !EC.cedulaValida(e.cedula) ? '<span class="tag bad">inválida</span>' : ''}</td>
         <td class="l">${esc(regNombre(e).split(' (')[0])}</td><td>${money(+e.salario)}</td><td class="l">${esc(e.ingreso)}</td><td>${modoTag(e.d13)}</td><td>${modoTag(e.d14)}</td><td>${modoTag(e.fr)}</td><td>${e.horasExtras === false ? '<span class="tag mute">No</span>' : '<span class="tag ok">Sí</span>'}</td>
         <td class="acts"><button class="btn sm" data-a="ed">Editar</button><button class="btn sm ghost" data-a="liq">Liquidar</button><button class="btn sm ghost danger" data-a="del" aria-label="Borrar">${icon('trash')}</button></td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty big"><h2>Sin empleados</h2><p>Agrega el primero o carga la demo.</p><div class="row center"><button class="btn primary" id="seed">Cargar demo</button></div></div>'}`;
@@ -358,10 +371,25 @@
     }));
   };
 
+  /** Campo Cargo: lista del catálogo agrupada por área; texto libre si aún no hay catálogo. */
+  function cargoField(n) {
+    const S = App.S;
+    if (!S.cargos.length) return `<input id="cargo" value="${esc(n.cargo)}" autocomplete="off" placeholder="Crea cargos en Configuración para elegirlos aquí">`;
+    const fuera = n.cargo && !S.cargos.some((c) => c.id === n.cargoId);
+    return `<select id="cargo"><option value="">Sin cargo</option>${fuera ? `<option value="__txt" selected>${esc(n.cargo)} (fuera del catálogo)</option>` : ''}
+      ${S.areas.map((a) => `<optgroup label="${esc(a.nombre)}">${S.cargos.filter((c) => c.areaId === a.id).map((c) => `<option value="${c.id}" ${c.id === n.cargoId ? 'selected' : ''}>${esc(c.nombre)}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  }
+  function cargoVal(n, d) {
+    const el = $('#cargo', d), v = el.value;
+    if (el.tagName === 'INPUT') return { cargo: v.trim(), cargoId: '' };
+    if (v === '__txt') return { cargo: n.cargo, cargoId: '' };
+    const c = App.S.cargos.find((x) => x.id === v);
+    return { cargo: c ? c.nombre : '', cargoId: v };
+  }
   /** Ficha del empleado: secciones cortas, ayudas en «?» y vista previa con desglose desplegable. */
   function form(e) {
     const S = App.S, abiertos = {};
-    const n = e ? JSON.parse(JSON.stringify(e)) : { id: uid(), nombre: '', cedula: '', cargo: '', regimen: 'ct', salario: S.cfg.sbu, ingreso: '', region: 'sierra', d13: 'mensualiza', d14: 'mensualiza', fr: 'mensualiza', horasExtras: true, iess: true, rentaModo: 'auto', renta: 0, gastosPersonales: 0, cargas: 0 };
+    const n = e ? JSON.parse(JSON.stringify(e)) : { id: uid(), nombre: '', cedula: '', cargo: '', regimen: 'ct', salario: S.cfg.sbu, ingreso: '', region: 'sierra', d13: 'mensualiza', d14: 'mensualiza', fr: 'mensualiza', horasExtras: true, iess: true, rentaModo: 'auto', renta: 0, gastosPersonales: 0 };
     const sel = (id, opts, val) => `<select id="${id}">${opts.map(([v, t]) => `<option value="${v}" ${v === val ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
     const lab = (t, h, cls = '', body = '') => `<label class="${cls}"><span class="lt">${t}${h ? tip(h) : ''}</span>${body}</label>`;
     const d = App.modal(`<div class="row between"><h3>${e ? 'Editar' : 'Nuevo'} empleado</h3><button class="btn sm ghost" id="x" type="button">${icon('x')}Cerrar</button></div>
@@ -369,9 +397,9 @@
       <section class="fs"><h4>Datos personales</h4><div class="grid2">
         ${lab('Nombre completo', '', 'span2', `<input id="nombre" required value="${esc(n.nombre)}" autocomplete="off">`)}
         ${lab('Cédula', 'Se valida el dígito verificador. Una cédula inválida no impide guardar.', '', `<input id="cedula" inputmode="numeric" maxlength="10" value="${esc(n.cedula)}" autocomplete="off"><small id="cm"></small>`)}
-        ${lab('Cargo', '', '', `<input id="cargo" value="${esc(n.cargo)}" autocomplete="off">`)}</div></section>
+        ${lab('Cargo', 'Se elige del catálogo de Configuración → Cargos y áreas; el área se asigna sola.', '', cargoField(n))}</div></section>
       <section class="fs"><h4>Contrato</h4><div class="grid2">
-        ${lab('Régimen laboral', 'Código del Trabajo: empresa privada. LOSEP: sector público. Define los recargos de horas extras (editables en Ajustes).', '', sel('regimen', Object.entries(S.cfg.regimenes).map(([k, r]) => [k, r.nombre.split(' (')[0]]), n.regimen))}
+        ${lab('Régimen laboral', 'Código del Trabajo: empresa privada. LOSEP: sector público. Define los recargos de horas extras (editables en Configuración).', '', sel('regimen', Object.entries(S.cfg.regimenes).map(([k, r]) => [k, r.nombre.split(' (')[0]]), n.regimen))}
         ${lab('Región', 'Fija la fecha del décimo cuarto: 15 de agosto en Sierra y Oriente, 15 de marzo en Costa y Galápagos.', '', sel('region', [['sierra', 'Sierra y Oriente'], ['costa', 'Costa y Galápagos']], n.region))}
         ${lab('Salario mensual (USD)', `El SBU ${S.cfg.anio} es ${money(S.cfg.sbu)}. Un salario menor genera una alerta pero igual se calcula.`, '', `<input id="salario" type="number" min="0" step="any" required value="${n.salario}">`)}
         ${lab('Fecha de ingreso', 'Prorratea los días del primer mes y define desde cuándo corresponden fondos de reserva (12 meses cumplidos).', '', `<input id="ingreso" type="date" value="${esc(n.ingreso)}">`)}</div></section>
@@ -383,16 +411,15 @@
       <section class="fs"><h4>Impuesto a la renta</h4><div class="grid2">
         ${lab('Cálculo de la retención', 'Automático: proyecta el año con la tabla del SRI. Manual: tú fijas el valor mensual (por ejemplo, el de tu contador).', '', sel('rm', [['auto', 'Automático (tabla del SRI)'], ['manual', 'Valor manual']], n.rentaModo || 'auto'))}
         ${lab('Retención mensual (USD)', '', 'rl', `<input id="renta" type="number" min="0" step="any" value="${n.renta || 0}">`)}
-        ${lab('Cargas familiares', 'Hijos o dependientes. Aumentan el tope de gastos personales deducibles y el reparto de utilidades (5% por cargas).', '', `<input id="cargas" type="number" min="0" step="any" value="${n.cargas || 0}">`)}
-        ${lab('Gastos personales al año (USD)', 'Vivienda, educación, salud, alimentación, vestimenta y turismo. Generan una rebaja del impuesto, con tope según las cargas.', 'ra', `<input id="gastos" type="number" min="0" step="any" value="${n.gastosPersonales || 0}">`)}</div>
+        ${lab('Gastos personales al año (USD)', 'Vivienda, educación, salud, alimentación, vestimenta y turismo. Generan una rebaja del impuesto, con tope anual.', 'ra', `<input id="gastos" type="number" min="0" step="any" value="${n.gastosPersonales || 0}">`)}</div>
         <details class="bd flat" id="irx"><summary><span>Ver tabla del SRI y topes de gastos</span>${icon('chev')}</summary><div id="irt"></div></details></section></div>
       <aside class="sumbox" id="pv"></aside></div>
       <div class="row end" style="margin-top:16px"><button class="btn" type="button" id="cancel">Cancelar</button><button class="btn primary" type="submit">Guardar</button></div></form>`, { wide: true });
     $('#x', d).onclick = $('#cancel', d).onclick = App.closeModal;
     d.addEventListener('toggle', (ev) => { if (ev.target.dataset && ev.target.dataset.k) abiertos[ev.target.dataset.k] = ev.target.open; }, true);
     const ced = $('#cedula', d);
-    const read = () => Object.assign(n, { nombre: $('#nombre', d).value.trim(), cedula: ced.value.trim(), cargo: $('#cargo', d).value.trim(), regimen: $('#regimen', d).value, region: $('#region', d).value, salario: +$('#salario', d).value || 0, ingreso: $('#ingreso', d).value,
-      d13: $('#d13', d).value, d14: $('#d14', d).value, fr: $('#fr', d).value, cargas: +$('#cargas', d).value || 0, gastosPersonales: +$('#gastos', d).value || 0, rentaModo: $('#rm', d).value, renta: +$('#renta', d).value || 0, horasExtras: $('#he', d).checked, iess: $('#iess', d).checked });
+    const read = () => Object.assign(n, { nombre: $('#nombre', d).value.trim(), cedula: ced.value.trim(), ...cargoVal(n, d), regimen: $('#regimen', d).value, region: $('#region', d).value, salario: +$('#salario', d).value || 0, ingreso: $('#ingreso', d).value,
+      d13: $('#d13', d).value, d14: $('#d14', d).value, fr: $('#fr', d).value, gastosPersonales: +$('#gastos', d).value || 0, rentaModo: $('#rm', d).value, renta: +$('#renta', d).value || 0, horasExtras: $('#he', d).checked, iess: $('#iess', d).checked });
     const row = (l, v, f, cls = '') => `<dt class="${cls}">${l}${f ? `<small>${f}</small>` : ''}</dt><dd class="${cls}">${v}</dd>`;
     const bd = (k, label, total, inner) => `<details class="bd" data-k="${k}" ${abiertos[k] ? 'open' : ''}><summary><span>${label}</span><b>${money(total)}</b>${icon('chev')}</summary><dl>${inner}</dl></details>`;
     const prev = () => {
@@ -411,7 +438,7 @@
         + row('Provisión vacaciones', money(c.provVac), `${money(c.aportable)} ÷ 24`) + row('Costo total', money(c.costoEmpleador), '', 'tot');
       $('#pv', d).innerHTML = `<h4>Vista previa mensual</h4><p class="sub">${App.periodoLabel(S.periodo)} · sin horas extras ni novedades</p>${bd('ing', 'Ingresos', c.totalIngresos, ing)}${bd('dsc', 'Descuentos', c.totalEgresos, dsc)}
         <div class="bd-net"><span>Neto a recibir</span><b>${money(c.neto)}</b></div>${bd('emp', 'Costo para la empresa', c.costoEmpleador, emp)}${c.avisos.length ? `<ul class="errs">${c.avisos.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}`;
-      $('#irt', d).innerHTML = App.irTableHTML(rd ? rd.base : undefined, n.cargas);
+      $('#irt', d).innerHTML = App.irTableHTML(rd ? rd.base : undefined);
     };
     $('#f', d).addEventListener('input', prev); $('#f', d).addEventListener('change', prev); prev();
     $('#f', d).onsubmit = (ev) => {
