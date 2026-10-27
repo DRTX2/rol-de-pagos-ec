@@ -1,4 +1,4 @@
-/* Cumplimiento legal, herramientas y configuración */
+/* Cumplimiento legal, herramientas y ajustes */
 (function () {
   'use strict';
   const App = window.App, EC = App.EC, { $, $$, esc, money, icon } = App;
@@ -93,12 +93,12 @@
     ['rs', 'rg'].forEach((id) => ($('#' + id).oninput = r)); r();
   };
 
-  /* ---------- Configuración ---------- */
-  let tab = 'empresa';
+  /* ---------- Ajustes ---------- */
+  let tab = 'datos';
   App.views.ajustes = (v) => {
     const S = App.S;
-    v.innerHTML = `<div class="head"><div><h1>Configuración</h1><p class="sub">Empieza aquí: datos de la empresa, cargos y áreas, y parámetros legales. Después agrega a tus empleados.</p></div></div>
-      <div class="seg wide">${[['empresa', 'Empresa'], ['params', 'Parámetros legales'], ['datos', 'Datos']].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div><div id="tb"></div>`;
+    v.innerHTML = `<div class="head"><div><h1>Ajustes y datos</h1><p class="sub">Empresa, parámetros legales y administración de la información.</p></div></div>
+      <div class="seg wide">${[['datos', 'Datos'], ['empresa', 'Empresa'], ['params', 'Parámetros legales']].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div><div id="tb"></div>`;
     $$('.seg button', v).forEach((b) => (b.onclick = () => { tab = b.dataset.t; App.render(); }));
     ({ datos, empresa, params })[tab]($('#tb', v));
   };
@@ -127,7 +127,7 @@
   }
   function params(h) {
     const c = App.S.cfg, f = (k, l, st = 'any') => `<label>${l}<input type="number" step="${st}" data-cfg="${k}" value="${c[k]}"></label>`;
-    h.innerHTML = `<div class="note"><b>Verificados en octubre de 2026</b> con prensa y firmas legales (no con el SRI directamente): SBU $482 (Consejo Nacional de Trabajo y Salarios, 15-dic-2025) · IESS 9,45% personal y 11,15% patronal · sin SECAP ni IECE (parámetros en 0, se pueden reactivar) · IVA 15% (circular SRI NAC-DGECCGC25-00000006) · tabla de renta 2026 (resolución NAC-DGERCGC25-00000043).<br><b>Para confirmar con tu contador:</b> canasta básica $821,80, topes de gastos personales por cargas y rebaja del 18%, porque las fuentes no coinciden del todo.</div>
+    h.innerHTML = `<div class="note"><b>Verificados en octubre de 2026</b> con prensa y firmas legales (no con el SRI directamente): SBU $482 (Consejo Nacional de Trabajo y Salarios, 15-dic-2025) · IESS 9,45% personal y 11,15% patronal · sin SECAP ni IECE (parámetros en 0, se pueden reactivar) · IVA 15% (circular SRI NAC-DGECCGC25-00000006) · tabla de renta 2026 (resolución NAC-DGERCGC25-00000043).<br><b>Para confirmar con tu contador:</b> canasta básica $821,80, tope de gastos personales y rebaja del 18%, porque las fuentes no coinciden del todo.</div>
       <div class="cols"><section class="card"><h2>Generales</h2><div class="grid2">${f('sbu', 'SBU (salario básico)')}${f('horasMes', 'Horas por mes (sin jornada)', '1')}${f('diasMes', 'Días por mes', '1')}${f('iva', 'IVA (%)')}</div></section>
       <section class="card"><h2>Aportes y fondos (%)</h2><div class="grid2">${f('iessPersonal', 'IESS personal')}${f('iessPatronal', 'IESS patronal')}${f('secap', 'SECAP')}${f('iece', 'IECE')}${f('fondosReserva', 'Fondos de reserva')}${f('rebajaGastos', 'Rebaja por gastos personales')}${f('topeIngresos', 'Tope de gastos (% de ingresos)')}${f('canasta', 'Canasta familiar básica (USD)')}${f('canastas', 'Tope de gastos (n.º de canastas)')}</div></section></div>
       <section class="card"><h2>Jornada de trabajo</h2><p class="sub">Topes legales que generan alertas y ventana del recargo nocturno. El valor de la hora sale de la jornada de cada empleado (horas diarias × días del mes).</p>

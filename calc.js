@@ -14,9 +14,9 @@
     iece: 0,
     fondosReserva: 8.33,
     iva: 15,
-    ver: 4, // versión de los parámetros legales (migra datos guardados con valores anteriores)
+    ver: 5, // versión de los parámetros legales (migra datos guardados con valores anteriores)
     canasta: 821.8, // canasta familiar básica: base de los topes de gastos personales
-    canastas: 7, // tope de gastos personales en canastas (sin cargas familiares: se usa el tramo base)
+    canastas: 7, // tope de gastos personales, en canastas familiares básicas
     rebajaGastos: 18, // % de rebaja del impuesto sobre el gasto permitido
     topeIngresos: 50, // los gastos permitidos no superan este % de los ingresos
     regimenes: {
@@ -204,7 +204,7 @@
     const frBase = frAplica ? r2((aportable * cfg.fondosReserva) / 100) : 0;
 
     const modo = (v) => v || 'mensualiza';
-    const obligatorio = (v) => (v === 'acumula' ? 'acumula' : 'mensualiza'); // décimos: nunca 'no'
+    const obligatorio = (v) => (v === 'acumula' ? 'acumula' : 'mensualiza'); // décimos 13 y 14: nunca 'no'
     const d13 = obligatorio(emp.d13), d14 = obligatorio(emp.d14), fr = modo(emp.fr);
     const d13Pago = d13 === 'mensualiza' ? d13Base : 0;
     const d14Pago = d14 === 'mensualiza' ? d14Base : 0;

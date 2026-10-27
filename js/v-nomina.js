@@ -151,20 +151,7 @@
     App.download(`rol-de-pagos-${S.periodo}.csv`, '﻿' + [head, ...lines].map((r) => r.map((v) => (typeof v === 'string' && v.startsWith('="') ? `"${v.replace(/"/g, '""')}"` : q(v))).join(';')).join('\r\n'), 'text/csv;charset=utf-8');
   }
 
-  /** Guía del flujo real: configurar → empleados → rol del mes → imprimir o exportar. */
-  function pasosHTML() {
-    const S = App.S, p = S.periodo, ok = (k) => !!S.cierre[`${p}:${k}`];
-    const pasos = [
-      ['Configura la empresa', 'Razón social, RUC válido y los cargos de la empresa.', '#/ajustes', EC.validarRUC(S.empresa.ruc).valido && !!S.empresa.nombre && S.cfg.cargos.length > 0],
-      ['Agrega a tus empleados', 'Régimen, salario, fecha de ingreso y beneficios de cada uno.', '#/empleados', S.empleados.length > 0],
-      [`Carga las novedades de ${App.periodoLabel(p)}`, 'Días, horas extras, bonos, anticipos y descuentos. Revisa los avisos.', '#/rol', ok('rol')],
-      ['Imprime o exporta el rol', 'Rol firmado por cada trabajador, consolidado y Excel para contabilidad.', '#/rol', ok('salida')],
-    ];
-    if (pasos.every((x) => x[3])) return '';
-    const sig = pasos.findIndex((x) => !x[3]);
-    return `<section class="card steps"><h2>Flujo del mes</h2><ol>${pasos.map(([t, d, href, hecho], i) => `<li class="${hecho ? 'done' : i === sig ? 'now' : ''}"><a href="${href}"><i>${hecho ? icon('check') : i + 1}</i><span><b>${t}</b><small>${d}</small></span></a></li>`).join('')}</ol></section>`;
-  }
-  const emptyNomina = (v, t) => { v.innerHTML = pasosHTML() + `<div class="empty big"><h2>${t}</h2><p>Carga los datos de demostración para explorar todos los módulos, o empieza agregando tu primer empleado.</p>
+  const emptyNomina = (v, t) => { v.innerHTML = `<div class="empty big"><h2>${t}</h2><p>Carga los datos de demostración para explorar todos los módulos, o empieza agregando tu primer empleado.</p>
     <div class="row center"><button class="btn primary" id="seed">Cargar demo</button><a class="btn" href="#/empleados">Agregar empleado</a></div></div>`;
     $('#seed').onclick = () => { App.seedDemo(); App.render(); }; };
 
@@ -185,9 +172,9 @@
     for (let m = 1; m <= 12; m++) { const pp = `${year}-${String(m).padStart(2, '0')}`; if (pp > p) break; const t = App.totalesPeriodo(pp); if (t.n) meses.push({ label: App.MESES[m - 1].slice(0, 3), vals: { neto: t.neto, desc: t.egresos, pat: t.patronal || 0, prov: t.prov } }); }
     const alerts = [];
     S.empleados.forEach((e) => { if (e.cedula && !EC.cedulaValida(e.cedula)) alerts.push(`${e.nombre}: cédula con dígito verificador inválido.`); if (+e.salario < S.cfg.sbu) alerts.push(`${e.nombre}: salario menor al SBU.`); });
-    if (!EC.validarRUC(S.empresa.ruc).valido) alerts.push('RUC de la empresa vacío o inválido (Configuración).');
+    if (!EC.validarRUC(S.empresa.ruc).valido) alerts.push('RUC de la empresa vacío o inválido (Ajustes).');
     act.forEach(([e, c]) => c.avisos.filter((a) => !a.startsWith('Fondos')).forEach((a) => alerts.push(`${e.nombre}: ${a}`)));
-    v.innerHTML = pasosHTML() + `<div class="head"><div><h1>Resumen de nómina</h1><p class="sub">${esc(S.empresa.nombre || 'Tu empresa')} · ${App.periodoLabel(p)}</p></div>
+    v.innerHTML = `<div class="head"><div><h1>Resumen de nómina</h1><p class="sub">${esc(S.empresa.nombre || 'Tu empresa')} · ${App.periodoLabel(p)}</p></div>
         <div class="row"><a class="btn" href="#/rol">${icon('rol')}Abrir rol del mes</a></div></div>
       <section class="hero"><div class="hero-main"><span class="k">Total neto a pagar</span><b class="hero-n" id="hn">$0.00</b><span class="k2">a ${T.n} empleados · costo total para la empresa <b id="hc">$0.00</b></span></div>
         <div class="hero-split"><span class="k">¿A dónde va cada dólar del costo?</span><div class="split" id="split">${seg.map(([l, n, c]) => `<i style="width:0;background:${c}" data-w="${T.costo ? (n / T.costo) * 100 : 0}" title="${l}: ${money(n)}"></i>`).join('')}</div>
@@ -238,21 +225,14 @@
     const lista = S.empleados.filter((e) => activo(e, p));
     if (!lista.length) { v.innerHTML = `<div class="empty big"><h2>Nadie en nómina en ${App.periodoLabel(p)}</h2><p>Los empleados aparecen desde su mes de ingreso. Cambia el periodo arriba.</p></div>`; return; }
     if (!lista.find((e) => e.id === S.selEmp)) S.selEmp = lista[0].id;
-    App.marcar('rol');
     v.innerHTML = `<div class="head"><div><h1>Rol de pagos · ${App.periodoLabel(p)}</h1><p class="sub">Elige un empleado, ingresa sus novedades del mes y el rol se recalcula al instante.</p></div>
       <div class="row wrap"><div class="seg" role="group" aria-label="Vista"><button data-m="vivo" class="${modo === 'vivo' ? 'on' : ''}">En vivo</button><button data-m="tabla" class="${modo === 'tabla' ? 'on' : ''}">Tabla</button></div>
       <button class="btn" id="copy">${icon('undo')}Copiar mes anterior</button><button class="btn" id="xls">${icon('down')}Excel</button><button class="btn" id="csv">${icon('down')}CSV</button><button class="btn" id="pc">${icon('print')}Consolidado</button><button class="btn primary" id="pa">${icon('print')}Imprimir roles</button></div></div>
-      <details class="card guide"><summary>¿Cómo leer esta pantalla?</summary><div class="guide-b"><ul>
-        <li><b>Tarjetas de arriba:</b> son totales de <i>todos</i> los empleados del mes. Pasa el mouse por el signo «?» para ver qué suma cada una.</li>
-        <li><b>Lista de la izquierda:</b> cada empleado con su neto del mes. Al elegir uno, el panel de la derecha muestra su rol.</li>
-        <li><b>Controles (novedades):</b> lo que cambia de un mes a otro: días, horas extras, bonos, anticipos y descuentos. Puedes mover el slider o escribir el número.</li>
-        <li><b>Rol (ingresos y egresos):</b> se calcula solo con la ficha del empleado y las novedades. Activa «Mostrar cómo se calcula» para ver la fórmula de cada línea.</li>
-        <li><b>Neto a recibir:</b> total de ingresos menos total de egresos. Es lo que se deposita al trabajador.</li></ul></div></details>
       <div class="stats" id="stats"></div><div id="body"></div>`;
     $$('.seg button', v).forEach((b) => (b.onclick = () => { modo = b.dataset.m; App.render(); }));
-    $('#xls').onclick = () => { App.marcar('salida'); exportExcel(); }; $('#csv').onclick = () => { App.marcar('salida'); exportCSV(); };
-    $('#pc').onclick = () => { App.marcar('salida'); App.print(consolidadoHTML(), 'landscape'); };
-    $('#pa').onclick = () => { App.marcar('salida'); App.print(lista.map((e) => App.slipHTML(e, App.calc(e))).join('')); };
+    $('#xls').onclick = exportExcel; $('#csv').onclick = exportCSV;
+    $('#pc').onclick = () => App.print(consolidadoHTML(), 'landscape');
+    $('#pa').onclick = () => App.print(lista.map((e) => App.slipHTML(e, App.calc(e))).join(''));
     $('#copy').onclick = async () => {
       const prev = App.shiftPeriodo(p, -1), src = S.periodos[prev];
       if (!src || !Object.keys(src).length) return App.toast(`No hay novedades en ${App.periodoLabel(prev)}`);
@@ -296,7 +276,7 @@
       <div class="net2"><span>Neto a recibir<small>Total ingresos − total egresos</small></span><b id="t-neto">$0.00</b></div><div class="flow-bar" id="fb"></div><ul class="legend inline" id="fl"></ul>
       <details class="bd more"><summary><span>Costo para la empresa</span><b id="t-costo">$0.00</b>${icon('chev')}</summary><dl id="emp-dl"></dl></details><ul class="warns" id="avs"></ul></div>`;
     $('#fx', slip).onchange = (ev) => { showFx = ev.target.checked; $('.slip2', slip).classList.toggle('fx-on', showFx); };
-    $('#vr', ctl).onclick = () => { App.marcar('salida'); App.print(App.slipHTML(e, App.calc(e))); };
+    $('#vr', ctl).onclick = () => App.print(App.slipHTML(e, App.calc(e)));
     const upd = () => {
       const c = App.calc(e);
       LINEAS.forEach(([g, k, lab]) => { const li = $(`#li-${g} li[data-k="${k}"]`, slip), x = c[k]; li.classList.toggle('show', x > 0 || k === 'sueldo'); $('.t', li).textContent = lab(c); $('.fx', li).textContent = fxText(k, c, e); App.setNum($('.vl', li), x); });

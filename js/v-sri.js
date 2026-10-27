@@ -81,7 +81,7 @@
   sri.enviar = (id) => {
     const d = App.S.docs.find((x) => x.id === id);
     const E = App.S.empresa;
-    if (!EC.validarRUC(E.ruc).valido) { App.toast('Configura un RUC válido del emisor en Configuración'); return; }
+    if (!EC.validarRUC(E.ruc).valido) { App.toast('Configura un RUC válido del emisor en Ajustes'); return; }
     const dlg = App.modal(`<h3>Enviando ${esc(TIPOS[d.tipo].n)} ${esc(d.numero)}</h3><p class="sub">Simulación del flujo de facturación electrónica del SRI.</p>
       <ol class="flow">${ETAPAS.map((e, i) => `<li data-i="${i}"><i></i><div><b>${e[0]}</b><small>${e[1]}</small></div></li>`).join('')}</ol>
       <div class="row end"><button class="btn primary" id="fin" disabled>Listo</button></div>`);
@@ -187,7 +187,7 @@
 
     const errores = () => {
       const e = [], E = S.empresa;
-      if (!EC.validarRUC(E.ruc).valido) e.push('El RUC del emisor no es válido: corrígelo en Configuración.');
+      if (!EC.validarRUC(E.ruc).valido) e.push('El RUC del emisor no es válido: corrígelo en Ajustes.');
       if (!draft.receptor) e.push('Selecciona un cliente.');
       if (tipo === 'retencion') {
         if (!draft.ref?.numero) e.push('Ingresa el número de la factura de sustento.');

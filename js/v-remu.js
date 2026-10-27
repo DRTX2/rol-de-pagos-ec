@@ -10,12 +10,12 @@
     const S = App.S, cfg = S.cfg, sal = +e.salario || 0, jor = EC.jornadaDe(e, cfg), mn = EC.salarioMinimo(e, cfg);
     const afil = e.iess !== false, modo = (m) => m || 'mensualiza';
     const patronal = afil ? (sal * cfg.iessPatronal) / 100 : 0, personal = afil ? (sal * cfg.iessPersonal) / 100 : 0; // sin redondeo intermedio, como la hoja de cálculo
-    const d14 = modo(e.d14) === 'no' ? 0 : cfg.sbu, d14m = d14 ? cfg.sbu / 12 : 0;
-    const d13 = modo(e.d13) === 'no' ? 0 : sal, d13m = d13 ? sal / 12 : 0;
+    const d14 = cfg.sbu, d14m = cfg.sbu / 12; // décimos 13 y 14 obligatorios para todos
+    const d13 = sal, d13m = sal / 12;
     const aplicaFR = modo(e.fr) !== 'no' && (proyectar || EC.mesesAntiguedad(e.ingreso, S.periodo) >= 12);
     const fr = aplicaFR ? (sal * cfg.fondosReserva) / 100 : 0;
     const sinDec = sal - personal;
-    const conDec = (sinDec + (modo(e.d14) === 'mensualiza' ? d14m : 0) + (modo(e.d13) === 'mensualiza' ? d13m : 0) + (modo(e.fr) === 'mensualiza' ? fr : 0));
+    const conDec = (sinDec + (e.d14 !== 'acumula' ? d14m : 0) + (e.d13 !== 'acumula' ? d13m : 0) + (modo(e.fr) === 'mensualiza' ? fr : 0));
     const com = e.comision ? cfg.comisiones.find((x) => String(x.id) === String(e.comision)) : null;
     return { e, sal, jor, mn, patronal, personal, d14, d14m, d13, d13m, fr, sinDec, conDec, com };
   }

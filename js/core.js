@@ -25,7 +25,6 @@
     v: 2, demo: false,
     cfg: JSON.parse(JSON.stringify(EC.DEFAULTS)),
     empresa: { nombre: '', ruc: '', direccion: '', establecimiento: '001', punto: '001', ambiente: '1', regimen: 'General' },
-    cierre: {},
     empleados: [], periodos: {}, checks: {},
     clientes: [], productos: [], docs: [], seq: {},
     finiquitos: [], utilidades: { valor: 0, anio: hoy.getFullYear() - 1 },
@@ -43,8 +42,6 @@
   App.save = () => { try { localStorage.setItem(KEY, JSON.stringify(App.S)); } catch (e) { /* ignorar */ } };
   App.replace = (s) => { App.S = Object.assign(blank(), s, { cfg: fixCfg(s.cfg) }); App.save(); };
 
-  /** Marca una etapa del mes como hecha (guía de pasos del Resumen). */
-  App.marcar = (k) => { App.S.cierre[`${App.S.periodo}:${k}`] = true; App.save(); };
   App.periodoLabel = (p) => { const [y, m] = p.split('-'); return `${MESES[+m - 1]} ${y}`; };
   App.shiftPeriodo = (p, d) => { const [y, m] = p.split('-').map(Number); const dt = new Date(y, m - 1 + d, 1); return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`; };
   App.novedades = (id, p) => { const S = App.S; return ((S.periodos[p || S.periodo] ||= {})[id] ||= {}); };
@@ -151,7 +148,7 @@
     return true;
   };
   App.clearAll = async () => {
-    if (!(await App.confirm({ title: 'Borrar todos los datos', text: 'Se eliminan empleados, roles, comprobantes, catálogo, liquidaciones y configuración de este navegador.', ok: 'Borrar todo', danger: true }))) return;
+    if (!(await App.confirm({ title: 'Borrar todos los datos', text: 'Se eliminan empleados, roles, comprobantes, catálogo, liquidaciones y ajustes de este navegador.', ok: 'Borrar todo', danger: true }))) return;
     const snap = JSON.stringify(App.S);
     App.replace(Object.assign(blank(), { cfg: JSON.parse(JSON.stringify(EC.DEFAULTS)) })); App.render();
     App.toast('Todos los datos borrados', () => { App.replace(JSON.parse(snap)); App.render(); });
@@ -188,9 +185,10 @@
 
   /* ---------- Shell ---------- */
   const NAV = [
-    ['Nómina', [['resumen', 'dash', 'Resumen'], ['ajustes', 'cog', 'Configuración'], ['empleados', 'users', 'Empleados'], ['rol', 'rol', 'Rol de pagos'], ['remuneraciones', 'calc', 'Remuneraciones'], ['liquidaciones', 'exit', 'Liquidaciones']]],
+    ['Nómina', [['resumen', 'dash', 'Resumen'], ['rol', 'rol', 'Rol de pagos'], ['empleados', 'users', 'Empleados'], ['remuneraciones', 'calc', 'Remuneraciones'], ['liquidaciones', 'exit', 'Liquidaciones']]],
     ['Facturación', [['comprobantes', 'doc', 'Comprobantes'], ['catalogo', 'cart', 'Clientes y productos']]],
     ['Normativa', [['legal', 'shield', 'Cumplimiento'], ['herramientas', 'tool', 'Herramientas']]],
+    ['Sistema', [['ajustes', 'cog', 'Ajustes y datos']]],
   ];
   App.route = () => (location.hash.replace(/^#\/?/, '') || 'resumen').split('?')[0];
   App.go = (r) => { location.hash = '#/' + r; };

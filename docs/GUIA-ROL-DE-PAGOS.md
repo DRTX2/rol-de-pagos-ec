@@ -4,26 +4,23 @@
 
 Cada paso trae el resultado esperado, calculado a mano y verificado con `node test.js` y con una prueba automática de la interfaz. Si tu pantalla muestra otra cifra, hay un error.
 
-Parámetros usados (Configuración → Parámetros legales): SBU $482 · IESS personal 9,45% · patronal 11,15% · sin SECAP ni IECE (parámetros en 0) · fondos de reserva 8,33% · 240 horas al mes · 30 días.
+Parámetros usados (Ajustes → Parámetros legales): SBU $482 · IESS personal 9,45% · patronal 11,15% · sin SECAP ni IECE (parámetros en 0) · fondos de reserva 8,33% · 240 horas al mes · 30 días.
 
 ## 0. Preparación
 1. Abre https://drtx2.github.io/rol-de-pagos-ec/ (o `python3 -m http.server` y entra a `localhost:8000`).
 2. Para partir sin datos: barra amarilla → **Empezar de cero**.
 3. Arriba elige el periodo **octubre 2026** con las flechas.
 
-## 1. Configuración y empleado
-1. **Configuración → Empresa:** razón social y RUC (por ejemplo `1792210046001`).
-2. **Configuración → Parámetros legales → Cargos:** revisa el catálogo de cargos (o agrega «Vendedor»).
-3. **Empleados → Nuevo empleado:**
+## 1. Crear el empleado (Empleados → Nuevo empleado)
 | Campo | Valor |
 |---|---|
 | Nombre | Juan Pérez López |
-| Cargo | Vendedor (lista del catálogo) |
+| Cargo | Vendedor |
 | Régimen | Código del Trabajo |
 | Región | Sierra y Oriente |
 | Salario | 800 |
 | Fecha de ingreso | 15/01/2024 |
-| Décimo tercero y cuarto (obligatorios), fondos de reserva | Se paga cada mes en el rol |
+| Décimo tercero, décimo cuarto, fondos de reserva | Se paga cada mes en el rol |
 | Gastos personales | 0 |
 | Retención de renta | Calcular con la tabla del SRI |
 | Recibe horas extras / Afiliado al IESS | marcados |
@@ -87,15 +84,15 @@ Cambia a Juan (Empleados → Editar) y revisa:
 | Salario 3000 (sin gastos personales, beneficios acumulados) | IESS $283.50 · base anual $32,598 · impuesto $2,296.70 · **retención $191.39** · neto $2,525.11 |
 | Igual, con gastos personales 8000 | Tope 7 canastas = $5,752.60 · rebaja 18% × 5,752.60 = $1,035.47 · **retención $105.10** · neto $2,611.40 |
 | Retención: valor manual 25 | Retención exactamente $25.00, ignora la tabla |
-| Régimen LOSEP | Horas suplementarias pagadas con recargo 25% (editable en Configuración) |
+| Régimen LOSEP | Horas suplementarias pagadas con recargo 25% (editable en Ajustes) |
 
 ## 6. Salidas
 1. **Rol individual:** botón «Rol individual» → hoja A4 con datos del empleado, ingresos y egresos alineados, neto, valor en letras y firmas. «Imprimir roles» pone dos por página.
 2. **Consolidado:** botón «Consolidado» → hoja horizontal con todos los empleados, áreas con color, totales y firmas de elaborado, revisado y aprobado.
 3. **Excel:** botón «Excel» → archivo .xlsx con colores por área (empleado, ingresos, egresos, neto, empresa), totales con fórmulas y la cédula como texto.
 4. **CSV:** botón «CSV» → para otros programas; la cédula conserva sus ceros.
-5. **Respaldo:** Configuración → Datos → Descargar respaldo; luego Borrar todo y Restaurar para comprobar que todo vuelve.
+5. **Respaldo:** Ajustes → Datos → Descargar respaldo; luego Borrar todo y Restaurar para comprobar que todo vuelve.
 6. **Resumen:** el neto total, el reparto del costo y el gráfico mensual deben coincidir con la suma del rol.
 
 ## 7. Cambiar parámetros
-En Configuración → Parámetros legales cambia el SBU a 500 y vuelve al rol de Juan: el décimo cuarto pasa a $41.67 (500÷12). El botón «Restaurar valores 2026» deja todo como estaba.
+En Ajustes → Parámetros legales cambia el SBU a 500 y vuelve al rol de Juan: el décimo cuarto pasa a $41.67 (500÷12). El botón «Restaurar valores 2026» deja todo como estaba.

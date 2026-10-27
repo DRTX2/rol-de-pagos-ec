@@ -129,12 +129,11 @@ console.log('OK v3');
   assert.strictEqual(r.rentaDet.tope, 5752.6);
   assert.strictEqual(r.rentaDet.rebaja, 1035.47);
   assert.strictEqual(r.renta, 105.1);
-  // décimos 13 y 14 nunca son 'no': un dato viejo con 'no' se trata como «cada mes»
+  // décimos 13 y 14 nunca son 'no': un dato con 'no' se trata como «cada mes»
   const x = EC.calcular({ regimen: 'ct', salario: 600, ingreso: '2020-01-01', d13: 'no', d14: 'no', fr: 'no' }, {}, cfg, '2026-10');
   assert.strictEqual(x.d13Pago, 50);
   assert.strictEqual(x.d14Pago, 40.17);
   assert.strictEqual(x.frPago, 0);
-  // el régimen doméstico ya no existe
   assert.ok(!('domestico' in cfg.regimenes));
   assert.strictEqual(EC.letras(918.68), 'NOVECIENTOS DIECIOCHO CON 68/100 DÓLARES');
   assert.strictEqual(EC.letras(2138.2), 'DOS MIL CIENTO TREINTA Y OCHO CON 20/100 DÓLARES');

@@ -5,13 +5,13 @@ Sistema de rol de pagos parametrizable para Ecuador, con simulador de comprobant
 **Demo:** https://drtx2.github.io/rol-de-pagos-ec/ — carga datos de demostración al primer ingreso.
 
 ## Módulos
-- **Resumen:** guía de 4 pasos (configurar, empleados, novedades, imprimir), neto a pagar, reparto del costo, evolución mensual, próximos vencimientos y revisión de datos.
+- **Resumen:** neto a pagar, reparto del costo, evolución mensual, próximos vencimientos y revisión de datos.
 - **Rol de pagos:** vista en vivo (sliders, el rol se recalcula al instante) y vista de tabla. Imprime rol individual, consolidado y exporta CSV.
 - **Empleados:** régimen (Código del Trabajo, LOSEP), salario, décimos 13 y 14 obligatorios (mensualiza / acumula) y fondos de reserva, horas extras, retención de renta automática (tabla SRI 2026) o manual.
 - **Liquidaciones:** finiquito (renuncia, desahucio, despido intempestivo, etc.) y reparto del 15% de utilidades.
 - **Comprobantes (simulador SRI):** factura, nota de crédito, nota de débito, guía de remisión y retención, con clave de acceso de 49 dígitos (módulo 11) y flujo de autorización simulado. Incluye RIDE imprimible.
 - **Cumplimiento y herramientas:** checklist legal con referencias, validador de cédula/RUC y de clave de acceso, calculadoras.
-- **Configuración:** empresa, parámetros editables, cargos con jerarquía, respaldo JSON y borrado de datos por módulo o total (con deshacer).
+- **Ajustes:** parámetros editables, respaldo JSON y borrado de datos por módulo o total (con deshacer).
 
 ## Documentación
 - [Cómo funciona el rol de pagos](docs/COMO-FUNCIONA.md): campos, fórmulas, impuesto a la renta, liquidación, utilidades y comprobantes.
